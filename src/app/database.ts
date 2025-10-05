@@ -20,6 +20,16 @@ export class MemorizationDB extends Dexie {
       flashcards: '@id, nextReview, createdAt',
       verbatimItems: '@id, nextReview, createdAt',
     });
+
+    this.version(2).stores({
+      flashcards: 'id, nextReview, createdAt',
+      verbatimItems: 'id, nextReview, createdAt',
+    });
+
+    this.version(3).stores({
+      flashcards: 'id, updatedAt, nextReview, createdAt',
+      verbatimItems: 'id, updatedAt, nextReview, createdAt',
+    });
   }
 
   configureCloudSync(settings: CloudSyncSettings | null): void {
