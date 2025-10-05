@@ -1,108 +1,88 @@
 <template>
-  <section class="card bg-base-100 shadow">
-    <div class="card-body space-y-5">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <section class="card bg-base-100 shadow">
+      <div class="card-body flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 class="card-title text-lg font-semibold">
-            Verbatim Queue
-          </h2>
-          <p class="text-sm text-base-content/60">
-            Due: {{ dueCount }} · New: {{ newCount }}
+          <h1 class="text-xl font-semibold">
+            Verbatim queue
+          </h1>
+          <p class="text-sm text-base-content/70">
+            Practise cloze recalls first on due passages, then on fresh ones.
           </p>
         </div>
-        <button
-          type="button"
+        <RouterLink
           class="btn"
-          :disabled="isProcessing"
-          @click="loadNext"
+          to="/verbatim/list"
         >
-          Refresh Queue
-        </button>
+          Manage passages
+        </RouterLink>
       </div>
+    </section>
 
-      <div
-        v-if="isLoading"
-        class="flex justify-center py-12"
-      >
-        <span
-          class="loading loading-spinner loading-lg"
-          aria-label="Loading study queue"
-        />
-      </div>
-
-      <div
-        v-else-if="!currentExercise"
-        class="rounded-box border border-dashed border-base-300 p-10 text-center text-sm text-base-content/60"
-      >
-        All clear for now. Add more passages or revisit later.
-      </div>
-
-      <div
-        v-else
-        class="space-y-6"
-      >
-        <div class="badge badge-outline">
-          {{ currentExerciseLabel }}
-        </div>
-        <div
-          v-if="currentExercise.item.preExercise"
-          class="rounded-box border border-base-300 bg-base-200/50 p-6"
-        >
-          <MarkdownPreview :source="currentExercise.item.preExercise" />
-        </div>
-        <div class="rounded-box border border-base-300 bg-base-200/50 p-6">
+    <FlashcardStudyPanel
+      :loading="isLoading"
+      :current-card-id="currentExercise?.item.id ?? null"
+      :stage="stage"
+      :is-processing="isProcessing"
+      @refresh-requested="loadNext"
+      @reveal-requested="reveal"
+    >
+      <template #summary>
+        <p class="text-sm text-base-content/60">
+          Due: {{ dueCount }} · New: {{ newCount }}
+        </p>
+      </template>
+      <template #empty>
+        Queue is empty. Add more passages or come back later.
+      </template>
+      <template #label>
+        {{ currentExerciseLabel }}
+      </template>
+      <template #front>
+        <div class="space-y-4">
+          <div v-if="currentExercise?.item.preExercise">
+            <MarkdownPreview :source="currentExercise?.item.preExercise ?? ''" />
+          </div>
           <MarkdownPreview :source="displayedExercise" />
         </div>
-        <div
-          v-if="stage === 'back' && currentExercise.item.postExercise"
-          class="rounded-box border border-base-300 bg-base-200/50 p-6"
+      </template>
+      <template #back>
+        <div class="space-y-4">
+          <div v-if="currentExercise?.item.preExercise">
+            <MarkdownPreview :source="currentExercise?.item.preExercise ?? ''" />
+          </div>
+          <MarkdownPreview :source="currentExercise?.item.toMemorize ?? ''" />
+          <div v-if="currentExercise?.item.postExercise">
+            <MarkdownPreview :source="currentExercise?.item.postExercise ?? ''" />
+          </div>
+        </div>
+      </template>
+      <template #actions>
+        <button
+          v-for="action in ratingActions"
+          :key="action.rating"
+          type="button"
+          class="btn flex-1 min-w-[120px]"
+          :class="action.className"
+          :disabled="isProcessing"
+          @click="grade(action.rating)"
         >
-          <MarkdownPreview :source="currentExercise.item.postExercise" />
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <button
-            v-if="stage === 'front'"
-            type="button"
-            class="btn btn-primary"
-            @click="reveal"
-          >
-            Reveal
-          </button>
-          <template v-else>
-            <button
-              v-for="action in ratingActions"
-              :key="action.rating"
-              type="button"
-              class="btn flex-1 min-w-[120px]"
-              :class="action.className"
-              :disabled="isProcessing"
-              @click="grade(action.rating)"
-            >
-              {{ action.label }}
-            </button>
-          </template>
-        </div>
-      </div>
-    </div>
-  </section>
+          {{ action.label }}
+        </button>
+      </template>
+    </FlashcardStudyPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { RouterLink } from 'vue-router';
 
+import FlashcardStudyPanel from '../../features/flashcard-study/FlashcardStudyPanel.vue';
 import MarkdownPreview from '../../dumb/MarkdownPreview.vue';
-import {
-  Rating,
-  type Grade,
-  type VerbatimItemRecord,
-  type VerbatimRepository,
-} from '../../entities/verbatim-item';
-
-interface Props {
-  repository: VerbatimRepository;
-}
-
-const props = defineProps<Props>();
+import { useVerbatimRepository } from '../../app/providers';
+import type { Grade, VerbatimItemRecord } from '../../entities/verbatim-item';
+import { Rating } from '../../entities/verbatim-item';
 
 interface PreparedExercise {
   item: VerbatimItemRecord;
@@ -110,17 +90,19 @@ interface PreparedExercise {
   revealText: string;
 }
 
+const repository = useVerbatimRepository();
+
 const allItems = ref<VerbatimItemRecord[]>([]);
 const currentExercise = ref<PreparedExercise | null>(null);
 const currentExerciseLabel = ref('');
-const stage = ref<'front' | 'back'>('front');
+const stage = ref<'front' | 'back' | 'idle'>('front');
 const isLoading = ref(true);
 const isProcessing = ref(false);
 
 let subscription: { unsubscribe: () => void } | null = null;
 
 onMounted(() => {
-  subscription = props.repository.watchAll().subscribe({
+  subscription = repository.watchAll().subscribe({
     next(items) {
       allItems.value = items;
       isLoading.value = false;
@@ -169,11 +151,11 @@ const displayedExercise = computed(() => {
 async function loadNext() {
   isProcessing.value = true;
   const now = new Date();
-  const dueItem = await props.repository.getNextDue(now);
-  const fallback = dueItem ?? (await props.repository.getNextNew());
+  const dueItem = await repository.getNextDue(now);
+  const fallback = dueItem ?? (await repository.getNextNew());
   currentExercise.value = fallback ? prepareExercise(fallback) : null;
-  currentExerciseLabel.value = dueItem ? 'Due Item' : fallback ? 'New Item' : '';
-  stage.value = 'front';
+  currentExerciseLabel.value = dueItem ? 'Due item' : fallback ? 'New item' : '';
+  stage.value = currentExercise.value ? 'front' : 'idle';
   isProcessing.value = false;
 }
 
@@ -186,8 +168,9 @@ async function grade(rating: Grade) {
     return;
   }
   isProcessing.value = true;
-  await props.repository.review(currentExercise.value.item.id, rating, new Date());
+  await repository.review(currentExercise.value.item.id, rating, new Date());
   currentExercise.value = null;
+  stage.value = 'idle';
   await loadNext();
   isProcessing.value = false;
 }

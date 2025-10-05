@@ -57,13 +57,13 @@ const navItems = computed(() => [
   },
   {
     label: 'Flashcards',
-    to: '/flashcards',
+    to: '/flashcards/list',
     icon: Layers,
     active: route.path.startsWith('/flashcards'),
   },
   {
     label: 'Verbatim',
-    to: '/verbatim',
+    to: '/verbatim/list',
     icon: FileText,
     active: route.path.startsWith('/verbatim'),
   },

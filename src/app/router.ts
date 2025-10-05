@@ -12,13 +12,51 @@ const routes = [
   },
   {
     path: '/flashcards',
-    name: 'flashcards',
-    component: () => import('../pages/flashcards/FlashcardsPage.vue'),
+    redirect: '/flashcards/list',
+  },
+  {
+    path: '/flashcards/list',
+    name: 'flashcards-list',
+    component: () => import('../pages/flashcards-list/FlashcardsListPage.vue'),
+  },
+  {
+    path: '/flashcards/edit',
+    name: 'flashcards-create',
+    component: () => import('../pages/flashcards-edit/FlashcardsEditPage.vue'),
+  },
+  {
+    path: '/flashcards/edit/:id',
+    name: 'flashcards-edit',
+    component: () => import('../pages/flashcards-edit/FlashcardsEditPage.vue'),
+  },
+  {
+    path: '/flashcards/queue',
+    name: 'flashcards-queue',
+    component: () => import('../pages/flashcards-queue/FlashcardsQueuePage.vue'),
   },
   {
     path: '/verbatim',
-    name: 'verbatim',
-    component: () => import('../pages/verbatim/VerbatimPage.vue'),
+    redirect: '/verbatim/list',
+  },
+  {
+    path: '/verbatim/list',
+    name: 'verbatim-list',
+    component: () => import('../pages/verbatim-list/VerbatimListPage.vue'),
+  },
+  {
+    path: '/verbatim/edit',
+    name: 'verbatim-create',
+    component: () => import('../pages/verbatim-edit/VerbatimEditPage.vue'),
+  },
+  {
+    path: '/verbatim/edit/:id',
+    name: 'verbatim-edit',
+    component: () => import('../pages/verbatim-edit/VerbatimEditPage.vue'),
+  },
+  {
+    path: '/verbatim/queue',
+    name: 'verbatim-queue',
+    component: () => import('../pages/verbatim-queue/VerbatimQueuePage.vue'),
   },
   {
     path: '/settings',

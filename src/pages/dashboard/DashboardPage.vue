@@ -12,7 +12,7 @@
     </section>
     <section class="grid gap-6 md:grid-cols-2">
       <RouterLink
-        to="/flashcards"
+        to="/flashcards/list"
         class="card bg-base-100 shadow transition hover:-translate-y-0.5"
       >
         <div class="card-body space-y-3">
@@ -29,7 +29,7 @@
         </div>
       </RouterLink>
       <RouterLink
-        to="/verbatim"
+        to="/verbatim/list"
         class="card bg-base-100 shadow transition hover:-translate-y-0.5"
       >
         <div class="card-body space-y-3">
