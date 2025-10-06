@@ -4,12 +4,6 @@ import dexieCloud from 'dexie-cloud-addon';
 import type { FlashcardRecord } from '../entities/flashcard';
 import type { VerbatimItemRecord } from '../entities/verbatim-item';
 
-export interface CloudSyncSettings {
-  databaseUrl: string;
-  requireAuth: boolean;
-  accessToken?: string;
-}
-
 export class MemorizationDB extends Dexie {
   flashcards!: Table<FlashcardRecord, string>;
   verbatimItems!: Table<VerbatimItemRecord, string>;
@@ -30,32 +24,13 @@ export class MemorizationDB extends Dexie {
       flashcards: 'id, updatedAt, nextReview, createdAt',
       verbatimItems: 'id, updatedAt, nextReview, createdAt',
     });
-  }
 
-  configureCloudSync(settings: CloudSyncSettings | null): void {
-    const potential = (this as unknown as {
-      cloud?: {
-        configure?: (_options: unknown) => void;
-        login?: (_options: unknown) => Promise<unknown>;
-      };
-    }).cloud;
-
-    if (!potential || typeof potential.configure !== 'function') {
-      return;
-    }
-
-    if (!settings || !settings.databaseUrl) {
-      return;
-    }
-
-    potential.configure({
-      databaseUrl: settings.databaseUrl,
-      requireAuth: settings.requireAuth,
-    });
-
-    if (settings.accessToken) {
-      potential.login?.({ accessToken: settings.accessToken }).catch(() => {
-        // swallow errors for now; user can retry from settings page
+    // Configure Dexie Cloud - this is app-level config, not user-level
+    const databaseUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
+    if (databaseUrl && this.cloud.configure) {
+      this.cloud.configure({
+        databaseUrl,
+        requireAuth: false, // Users can use app offline, login is optional
       });
     }
   }

@@ -3,9 +3,6 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "types": ["vite/client"],
-    "paths": {
-      "dexie-cloud-addon": ["./src/stubs/dexie-cloud-addon.ts"]
-    },
 
     /* Linting */
     "strict": true,

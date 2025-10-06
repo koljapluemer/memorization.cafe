@@ -3,132 +3,109 @@
     <section class="card bg-base-100 shadow">
       <div class="card-body space-y-4">
         <h1 class="card-title text-lg font-semibold">
-          Dexie Cloud Sync
+          Cloud Sync
         </h1>
         <p class="text-sm text-base-content/70">
-          Provide your Dexie Cloud details to sync flashcards and verbatim items across devices.
+          Log in to sync your flashcards and verbatim items across devices.
         </p>
+
         <div
-          class="alert"
-          :class="statusClass"
+          v-if="isLoggedIn"
+          class="alert alert-success"
         >
-          <span class="font-medium">
-            Status:
-          </span>
-          <span>
-            {{ statusText }}
-          </span>
+          <span class="font-medium">Logged in as:</span>
+          <span>{{ userName }}</span>
         </div>
-        <form
-          class="space-y-4"
-          @submit.prevent="onSubmit"
+
+        <div
+          v-else
+          class="alert alert-info"
         >
-          <label class="form-control w-full">
-            <span class="label-text font-medium">
-              Database URL
-            </span>
-            <input
-              v-model="form.databaseUrl"
-              type="url"
-              class="input input-bordered"
-              placeholder="https://your-db.dexie.cloud"
-              required
-            >
-          </label>
-          <label class="form-control w-full">
-            <span class="label-text font-medium">
-              Access Token (optional)
-            </span>
-            <input
-              v-model="form.accessToken"
-              type="text"
-              class="input input-bordered"
-              placeholder="Paste a token if your project requires it"
-            >
-          </label>
-          <label class="label cursor-pointer justify-start gap-3">
-            <input
-              v-model="form.requireAuth"
-              type="checkbox"
-              class="toggle"
-            >
-            <span class="label-text">
-              Require authentication
-            </span>
-          </label>
-          <div class="flex flex-wrap justify-between gap-2">
-            <button
-              class="btn btn-primary"
-              type="submit"
-              :disabled="!form.databaseUrl"
-            >
-              Save settings
-            </button>
-            <button
-              class="btn btn-ghost"
-              type="button"
-              :disabled="!cloudContext.settings.value"
-              @click="disableSync"
-            >
-              Disable sync
-            </button>
-          </div>
-        </form>
+          <span>Not logged in. Your data is stored locally only.</span>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            v-if="!isLoggedIn"
+            class="btn btn-primary"
+            :disabled="isLoading"
+            @click="handleLogin"
+          >
+            {{ isLoading ? 'Loading...' : 'Log in' }}
+          </button>
+          <button
+            v-else
+            class="btn btn-ghost"
+            :disabled="isLoading"
+            @click="handleLogout"
+          >
+            {{ isLoading ? 'Loading...' : 'Log out' }}
+          </button>
+        </div>
+
+        <div
+          v-if="error"
+          class="alert alert-error"
+        >
+          <span>{{ error }}</span>
+        </div>
       </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useDatabase } from '../../app/providers';
 
-import { useCloudSettings } from '../../app/providers';
+const db = useDatabase();
+const isLoggedIn = ref(false);
+const userName = ref('');
+const isLoading = ref(false);
+const error = ref<string | null>(null);
 
-interface CloudSyncFormState {
-  databaseUrl: string;
-  requireAuth: boolean;
-  accessToken: string;
-}
+let userSubscription: { unsubscribe: () => void } | null = null;
 
-const cloudContext = useCloudSettings();
-
-const form = reactive<CloudSyncFormState>({
-  databaseUrl: '',
-  requireAuth: false,
-  accessToken: '',
+onMounted(() => {
+  // Subscribe to currentUser observable
+  userSubscription = db.cloud.currentUser.subscribe({
+    next: (user) => {
+      isLoggedIn.value = user?.isLoggedIn ?? false;
+      userName.value = user?.name ?? '';
+    },
+    error: (err) => {
+      console.error('User subscription error:', err);
+    },
+  });
 });
 
-watch(
-  () => cloudContext.settings.value,
-  (value) => {
-    if (value) {
-      form.databaseUrl = value.databaseUrl;
-      form.requireAuth = value.requireAuth;
-      form.accessToken = value.accessToken ?? '';
-    } else {
-      form.databaseUrl = '';
-      form.requireAuth = false;
-      form.accessToken = '';
-    }
-  },
-  { immediate: true },
-);
+onUnmounted(() => {
+  userSubscription?.unsubscribe();
+});
 
-const statusText = computed(() => (cloudContext.settings.value ? 'Enabled' : 'Disabled'));
-const statusClass = computed(() => (cloudContext.settings.value ? 'alert-success' : 'alert-info'));
+async function handleLogin() {
+  isLoading.value = true;
+  error.value = null;
 
-function onSubmit() {
-  if (!form.databaseUrl) {
-    return;
+  try {
+    await db.cloud.login();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to log in';
+  } finally {
+    isLoading.value = false;
   }
-  cloudContext.update({
-    databaseUrl: form.databaseUrl.trim(),
-    requireAuth: form.requireAuth,
-    accessToken: form.accessToken.trim() || undefined,
-  });
 }
 
-function disableSync() {
-  cloudContext.update(null);
+async function handleLogout() {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    await db.cloud.logout();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to log out';
+  } finally {
+    isLoading.value = false;
+  }
 }
 </script>
