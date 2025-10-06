@@ -6,6 +6,7 @@ import {
   type Card,
   type Grade,
 } from 'ts-fsrs';
+import { parseCsv, toCsv, downloadCsv } from '../../dumb/csv-utils';
 
 export interface VerbatimItemRecord {
   id: string;
@@ -34,17 +35,11 @@ export type VerbatimRepository = {
   getNextDue: (now: Date) => Promise<VerbatimItemRecord | undefined>;
   getNextNew: () => Promise<VerbatimItemRecord | undefined>;
   review: (id: string, grade: Grade, now: Date) => Promise<VerbatimItemRecord | undefined>;
+  importFromCsv: (csvText: string) => Promise<number>;
+  downloadDemoCsv: () => void;
 };
 
 const scheduler = fsrs();
-
-function generateId(): string {
-  const cryptoRef = globalThis.crypto as Crypto | undefined;
-  if (cryptoRef && 'randomUUID' in cryptoRef) {
-    return cryptoRef.randomUUID();
-  }
-  return `verbatim-${Math.random().toString(36).slice(2)}`;
-}
 
 function sanitizeDraft(draft: VerbatimDraft): VerbatimDraft {
   return {
@@ -54,12 +49,11 @@ function sanitizeDraft(draft: VerbatimDraft): VerbatimDraft {
   };
 }
 
-function createRecordFromDraft(draft: VerbatimDraft): VerbatimItemRecord {
+function createRecordFromDraft(draft: VerbatimDraft): Omit<VerbatimItemRecord, 'id'> {
   const now = new Date();
   const card = createEmptyCard(now);
   const sanitized = sanitizeDraft(draft);
   return {
-    id: generateId(),
     ...sanitized,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
@@ -83,8 +77,8 @@ export function createVerbatimRepository(db: {
     },
     async create(draft: VerbatimDraft) {
       const record = createRecordFromDraft(draft);
-      await verbatimItems.add(record);
-      return record.id;
+      const id = await verbatimItems.add(record as VerbatimItemRecord);
+      return id;
     },
     async update(id: string, draft: VerbatimDraft) {
       const sanitized = sanitizeDraft(draft);
@@ -133,6 +127,40 @@ export function createVerbatimRepository(db: {
         updatedAt: lastReviewedAt,
         lastReviewedAt,
       } satisfies VerbatimItemRecord;
+    },
+    async importFromCsv(csvText: string): Promise<number> {
+      const rows = parseCsv(csvText);
+      if (rows.length === 0) return 0;
+
+      const hasHeader =
+        rows[0][0]?.toLowerCase() === 'preexercise' ||
+        rows[0][0]?.toLowerCase() === 'pre-exercise';
+      const dataRows = hasHeader ? rows.slice(1) : rows;
+
+      let imported = 0;
+      for (const row of dataRows) {
+        if (row.length >= 3) {
+          const draft: VerbatimDraft = {
+            preExercise: (row[0] || '').trim(),
+            toMemorize: (row[1] || '').trim(),
+            postExercise: (row[2] || '').trim(),
+          };
+          if (draft.toMemorize) {
+            const record = createRecordFromDraft(draft);
+            await verbatimItems.add(record as VerbatimItemRecord);
+            imported++;
+          }
+        }
+      }
+      return imported;
+    },
+    downloadDemoCsv(): void {
+      const demo = [
+        ['preExercise', 'toMemorize', 'postExercise'],
+        ['', 'To be, or not to be, that is the question', ''],
+        ['From Shakespeare:', 'All the world\'s a stage', 'As You Like It'],
+      ];
+      downloadCsv('verbatim-items-demo.csv', toCsv(demo));
     },
   };
 }

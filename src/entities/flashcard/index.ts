@@ -6,6 +6,7 @@ import {
   type Card,
   type Grade,
 } from 'ts-fsrs';
+import { parseCsv, toCsv, downloadCsv } from '../../dumb/csv-utils';
 
 export interface FlashcardRecord {
   id: string;
@@ -32,23 +33,16 @@ export type FlashcardRepository = {
   getNextDue: (now: Date) => Promise<FlashcardRecord | undefined>;
   getNextNew: () => Promise<FlashcardRecord | undefined>;
   review: (id: string, grade: Grade, now: Date) => Promise<FlashcardRecord | undefined>;
+  importFromCsv: (csvText: string) => Promise<number>;
+  downloadDemoCsv: () => void;
 };
 
 const scheduler = fsrs();
 
-function generateId(): string {
-  const cryptoRef = globalThis.crypto as Crypto | undefined;
-  if (cryptoRef && 'randomUUID' in cryptoRef) {
-    return cryptoRef.randomUUID();
-  }
-  return `flashcard-${Math.random().toString(36).slice(2)}`;
-}
-
-function createRecordFromDraft(draft: FlashcardDraft): FlashcardRecord {
+function createRecordFromDraft(draft: FlashcardDraft): Omit<FlashcardRecord, 'id'> {
   const now = new Date();
   const card = createEmptyCard(now);
   return {
-    id: generateId(),
     front: draft.front.trim(),
     back: draft.back.trim(),
     createdAt: now.toISOString(),
@@ -80,8 +74,8 @@ export function createFlashcardRepository(db: {
     },
     async create(draft: FlashcardDraft) {
       const record = createRecordFromDraft(draft);
-      await flashcards.add(record);
-      return record.id;
+      const id = await flashcards.add(record as FlashcardRecord);
+      return id;
     },
     async update(id: string, draft: FlashcardDraft) {
       const sanitized = sanitizeDraft(draft);
@@ -133,6 +127,37 @@ export function createFlashcardRepository(db: {
         lastReviewedAt,
         updatedAt: lastReviewedAt,
       } satisfies FlashcardRecord;
+    },
+    async importFromCsv(csvText: string): Promise<number> {
+      const rows = parseCsv(csvText);
+      if (rows.length === 0) return 0;
+
+      const hasHeader = rows[0][0]?.toLowerCase() === 'front';
+      const dataRows = hasHeader ? rows.slice(1) : rows;
+
+      let imported = 0;
+      for (const row of dataRows) {
+        if (row.length >= 2 && row[0] && row[1]) {
+          const draft: FlashcardDraft = {
+            front: row[0].trim(),
+            back: row[1].trim(),
+          };
+          if (draft.front && draft.back) {
+            const record = createRecordFromDraft(draft);
+            await flashcards.add(record as FlashcardRecord);
+            imported++;
+          }
+        }
+      }
+      return imported;
+    },
+    downloadDemoCsv(): void {
+      const demo = [
+        ['front', 'back'],
+        ['What is the capital of France?', 'Paris'],
+        ['Define "algorithm"', 'A step-by-step procedure for solving a problem'],
+      ];
+      downloadCsv('flashcards-demo.csv', toCsv(demo));
     },
   };
 }

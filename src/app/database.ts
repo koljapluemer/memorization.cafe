@@ -25,6 +25,11 @@ export class MemorizationDB extends Dexie {
       verbatimItems: 'id, updatedAt, nextReview, createdAt',
     });
 
+    this.version(4).stores({
+      flashcards: '@id, updatedAt, nextReview, createdAt',
+      verbatimItems: '@id, updatedAt, nextReview, createdAt',
+    });
+
     // Configure Dexie Cloud - this is app-level config, not user-level
     const databaseUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
     if (databaseUrl && this.cloud.configure) {

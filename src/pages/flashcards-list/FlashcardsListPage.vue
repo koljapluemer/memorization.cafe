@@ -17,6 +17,23 @@
           >
             Open queue
           </RouterLink>
+          <button
+            type="button"
+            class="btn"
+            @click="handleDownloadDemo"
+          >
+            Download demo CSV
+          </button>
+          <label class="btn">
+            Import CSV
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".csv"
+              class="hidden"
+              @change="handleFileChange"
+            >
+          </label>
           <RouterLink
             class="btn btn-primary"
             to="/flashcards/edit"
@@ -67,6 +84,7 @@ const repository = useFlashcardRepository();
 
 const flashcards = ref<FlashcardRecord[]>([]);
 const isLoading = ref(true);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 let subscription: { unsubscribe: () => void } | null = null;
 
@@ -97,6 +115,35 @@ async function confirmDelete(record: FlashcardRecord) {
     return;
   }
   await repository.remove(record.id);
+}
+
+function handleDownloadDemo() {
+  repository.downloadDemoCsv();
+}
+
+async function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const count = await repository.importFromCsv(text);
+    showAlert(`Successfully imported ${count} flashcard${count === 1 ? '' : 's'}`);
+  } catch (error) {
+    reportError('Failed to import CSV', error);
+    showAlert('Failed to import CSV. Please check the file format.');
+  } finally {
+    if (fileInput.value) {
+      fileInput.value.value = '';
+    }
+  }
+}
+
+function showAlert(message: string) {
+  if (typeof globalThis !== 'undefined' && 'alert' in globalThis) {
+    globalThis.alert(message);
+  }
 }
 
 function reportError(message: string, error: unknown) {
