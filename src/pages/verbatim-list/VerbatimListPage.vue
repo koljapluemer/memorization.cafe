@@ -44,9 +44,42 @@
       </div>
     </section>
 
+    <div class="collapse collapse-arrow bg-base-100 shadow">
+      <input
+        v-model="batchOpsOpen"
+        type="checkbox"
+      >
+      <div class="collapse-title font-semibold">
+        Batch operations
+        <span v-if="selectedIds.size > 0">({{ selectedIds.size }} selected)</span>
+      </div>
+      <div class="collapse-content">
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            class="btn btn-sm"
+            @click="selectAll"
+          >
+            Select all
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-error"
+            :disabled="selectedIds.size === 0"
+            @click="deleteSelected"
+          >
+            Delete selected
+          </button>
+        </div>
+      </div>
+    </div>
+
     <VerbatimList
       :items="items"
       :loading="isLoading"
+      :selected-ids="selectedIds"
+      @toggle-select="toggleSelect"
+      @toggle-select-all="toggleSelectAll"
     >
       <template #empty>
         <p>
@@ -85,6 +118,8 @@ const repository = useVerbatimRepository();
 const items = ref<VerbatimItemRecord[]>([]);
 const isLoading = ref(true);
 const fileInput = ref<HTMLInputElement | null>(null);
+const selectedIds = ref<Set<string>>(new Set());
+const batchOpsOpen = ref(true);
 
 let subscription: { unsubscribe: () => void } | null = null;
 
@@ -105,6 +140,48 @@ onBeforeUnmount(() => {
   subscription?.unsubscribe();
 });
 
+function toggleSelect(id: string) {
+  if (selectedIds.value.has(id)) {
+    selectedIds.value.delete(id);
+  } else {
+    selectedIds.value.add(id);
+  }
+  selectedIds.value = new Set(selectedIds.value);
+}
+
+function toggleSelectAll() {
+  if (selectedIds.value.size === items.value.length) {
+    selectedIds.value.clear();
+  } else {
+    selectedIds.value = new Set(items.value.map((item) => item.id));
+  }
+  selectedIds.value = new Set(selectedIds.value);
+}
+
+function selectAll() {
+  selectedIds.value = new Set(items.value.map((item) => item.id));
+}
+
+async function deleteSelected() {
+  const count = selectedIds.value.size;
+  const canConfirm =
+    typeof globalThis !== 'undefined' &&
+    'confirm' in globalThis &&
+    typeof globalThis.confirm === 'function';
+  const shouldDelete = canConfirm
+    ? globalThis.confirm(`Delete ${count} passage${count === 1 ? '' : 's'}?`)
+    : true;
+  if (!shouldDelete) {
+    return;
+  }
+
+  for (const id of selectedIds.value) {
+    await repository.remove(id);
+  }
+  selectedIds.value.clear();
+  selectedIds.value = new Set(selectedIds.value);
+}
+
 async function confirmDelete(record: VerbatimItemRecord) {
   const canConfirm =
     typeof globalThis !== 'undefined' &&
@@ -115,6 +192,8 @@ async function confirmDelete(record: VerbatimItemRecord) {
     return;
   }
   await repository.remove(record.id);
+  selectedIds.value.delete(record.id);
+  selectedIds.value = new Set(selectedIds.value);
 }
 
 function handleDownloadDemo() {

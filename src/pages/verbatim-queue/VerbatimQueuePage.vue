@@ -35,9 +35,6 @@
       <template #empty>
         Queue is empty. Add more passages or come back later.
       </template>
-      <template #label>
-        {{ currentExerciseLabel }}
-      </template>
       <template #front>
         <div class="space-y-4">
           <div v-if="currentExercise?.item.preExercise">
@@ -48,10 +45,6 @@
       </template>
       <template #back>
         <div class="space-y-4">
-          <div v-if="currentExercise?.item.preExercise">
-            <MarkdownPreview :source="currentExercise?.item.preExercise ?? ''" />
-          </div>
-          <MarkdownPreview :source="currentExercise?.item.toMemorize ?? ''" />
           <div v-if="currentExercise?.item.postExercise">
             <MarkdownPreview :source="currentExercise?.item.postExercise ?? ''" />
           </div>

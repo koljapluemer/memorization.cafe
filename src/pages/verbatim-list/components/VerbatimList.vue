@@ -29,51 +29,103 @@
     </div>
     <div
       v-else
-      class="space-y-4"
+      class="overflow-x-auto"
     >
-      <article
-        v-for="item in items"
-        :key="item.id"
-        class="card bg-base-100 shadow"
-      >
-        <div class="card-body space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <h3 class="text-base font-semibold">
-              {{ item.toMemorize.slice(0, 80) || 'Untitled' }}
-            </h3>
-            <div class="flex items-center gap-2 text-xs text-base-content/60">
-              <span>Reps: {{ item.fsrsCard.reps }}</span>
-              <span v-if="item.nextReview">Next: {{ formatRelative(item.nextReview) }}</span>
-            </div>
-          </div>
-          <div class="space-y-4">
-            <div v-if="item.preExercise">
-              <p class="text-sm font-medium text-base-content/70">
-                Pre exercise
-              </p>
-              <MarkdownPreview :source="item.preExercise" />
-            </div>
-            <div>
-              <p class="text-sm font-medium text-base-content/70">
-                To memorise
-              </p>
-              <MarkdownPreview :source="item.toMemorize" />
-            </div>
-            <div v-if="item.postExercise">
-              <p class="text-sm font-medium text-base-content/70">
-                Post exercise
-              </p>
-              <MarkdownPreview :source="item.postExercise" />
-            </div>
-          </div>
-          <div class="flex flex-wrap justify-between gap-2">
-            <slot
-              name="actions"
-              :item="item"
-            />
-          </div>
-        </div>
-      </article>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>
+              <label>
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  :checked="selectedIds.size === items.length && items.length > 0"
+                  @change="toggleSelectAll"
+                >
+              </label>
+            </th>
+            <th>Pre Exercise</th>
+            <th>To Memorize</th>
+            <th>Post Exercise</th>
+            <th>Reps</th>
+            <th>Next Review</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="item in items"
+            :key="item.id"
+          >
+            <th>
+              <label>
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  :checked="selectedIds.has(item.id)"
+                  @change="toggleSelect(item.id)"
+                >
+              </label>
+            </th>
+            <td>
+              <div class="max-w-xs">
+                <MarkdownPreview
+                  v-if="item.preExercise"
+                  :source="truncate(item.preExercise, 80)"
+                />
+                <span
+                  v-else
+                  class="text-xs text-base-content/50"
+                >
+                  -
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="max-w-md">
+                <MarkdownPreview :source="truncate(item.toMemorize, 120)" />
+              </div>
+            </td>
+            <td>
+              <div class="max-w-xs">
+                <MarkdownPreview
+                  v-if="item.postExercise"
+                  :source="truncate(item.postExercise, 80)"
+                />
+                <span
+                  v-else
+                  class="text-xs text-base-content/50"
+                >
+                  -
+                </span>
+              </div>
+            </td>
+            <td>{{ item.fsrsCard.reps }}</td>
+            <td>
+              <span
+                v-if="item.nextReview"
+                class="text-xs"
+              >
+                {{ formatRelative(item.nextReview) }}
+              </span>
+              <span
+                v-else
+                class="text-xs text-base-content/50"
+              >
+                -
+              </span>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <slot
+                  name="actions"
+                  :item="item"
+                />
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
@@ -89,14 +141,33 @@ type LoadState = 'idle' | 'loading';
 interface Props {
   items: VerbatimItemRecord[];
   loading?: boolean;
+  selectedIds: Set<string>;
 }
 
 const props = defineProps<Props>();
+
+const emit = defineEmits<{
+  toggleSelect: [id: string];
+  toggleSelectAll: [];
+}>();
 
 const state = computed<LoadState>(() => (props.loading ? 'loading' : 'idle'));
 const items = computed(() => props.items);
 
 function formatRelative(iso: string) {
   return new Date(iso).toLocaleString();
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
+function toggleSelect(id: string) {
+  emit('toggleSelect', id);
+}
+
+function toggleSelectAll() {
+  emit('toggleSelectAll');
 }
 </script>

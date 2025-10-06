@@ -29,45 +29,79 @@
     </div>
     <div
       v-else
-      class="space-y-4"
+      class="overflow-x-auto"
     >
-      <article
-        v-for="cardItem in items"
-        :key="cardItem.id"
-        class="card bg-base-100 shadow"
-      >
-        <div class="card-body space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <h3 class="text-base font-semibold">
-              {{ cardItem.front.slice(0, 80) || 'Untitled' }}
-            </h3>
-            <div class="flex items-center gap-2 text-xs text-base-content/60">
-              <span>Reps: {{ cardItem.fsrsCard.reps }}</span>
-              <span v-if="cardItem.nextReview">Next: {{ formatRelative(cardItem.nextReview) }}</span>
-            </div>
-          </div>
-          <div class="grid gap-4 lg:grid-cols-2">
-            <div>
-              <p class="text-sm font-medium text-base-content/70">
-                Front
-              </p>
-              <MarkdownPreview :source="cardItem.front" />
-            </div>
-            <div>
-              <p class="text-sm font-medium text-base-content/70">
-                Back
-              </p>
-              <MarkdownPreview :source="cardItem.back" />
-            </div>
-          </div>
-          <div class="flex flex-wrap justify-between gap-2">
-            <slot
-              name="actions"
-              :card="cardItem"
-            />
-          </div>
-        </div>
-      </article>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>
+              <label>
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  :checked="selectedIds.size === items.length && items.length > 0"
+                  @change="toggleSelectAll"
+                >
+              </label>
+            </th>
+            <th>Front</th>
+            <th>Back</th>
+            <th>Reps</th>
+            <th>Next Review</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="cardItem in items"
+            :key="cardItem.id"
+          >
+            <th>
+              <label>
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  :checked="selectedIds.has(cardItem.id)"
+                  @change="toggleSelect(cardItem.id)"
+                >
+              </label>
+            </th>
+            <td>
+              <div class="max-w-xs">
+                <MarkdownPreview :source="truncate(cardItem.front, 100)" />
+              </div>
+            </td>
+            <td>
+              <div class="max-w-xs">
+                <MarkdownPreview :source="truncate(cardItem.back, 100)" />
+              </div>
+            </td>
+            <td>{{ cardItem.fsrsCard.reps }}</td>
+            <td>
+              <span
+                v-if="cardItem.nextReview"
+                class="text-xs"
+              >
+                {{ formatRelative(cardItem.nextReview) }}
+              </span>
+              <span
+                v-else
+                class="text-xs text-base-content/50"
+              >
+                -
+              </span>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <slot
+                  name="actions"
+                  :card="cardItem"
+                />
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
@@ -83,14 +117,33 @@ type LoadState = 'idle' | 'loading';
 interface Props {
   items: FlashcardRecord[];
   loading?: boolean;
+  selectedIds: Set<string>;
 }
 
 const props = defineProps<Props>();
+
+const emit = defineEmits<{
+  toggleSelect: [id: string];
+  toggleSelectAll: [];
+}>();
 
 const state = computed<LoadState>(() => (props.loading ? 'loading' : 'idle'));
 const items = computed(() => props.items);
 
 function formatRelative(iso: string) {
   return new Date(iso).toLocaleString();
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
+function toggleSelect(id: string) {
+  emit('toggleSelect', id);
+}
+
+function toggleSelectAll() {
+  emit('toggleSelectAll');
 }
 </script>

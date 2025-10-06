@@ -36,9 +36,6 @@
         v-else
         class="space-y-6"
       >
-        <div class="badge badge-outline">
-          <slot name="label" />
-        </div>
         <div class="rounded-box border border-base-300 bg-base-200/50 p-6">
           <slot name="front" />
         </div>
