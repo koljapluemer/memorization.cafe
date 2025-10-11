@@ -47,8 +47,6 @@
             <th>Pre Exercise</th>
             <th>To Memorize</th>
             <th>Post Exercise</th>
-            <th>Reps</th>
-            <th>Next Review</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -100,21 +98,6 @@
                 </span>
               </div>
             </td>
-            <td>{{ item.fsrsCard.reps }}</td>
-            <td>
-              <span
-                v-if="item.nextReview"
-                class="text-xs"
-              >
-                {{ formatRelative(item.nextReview) }}
-              </span>
-              <span
-                v-else
-                class="text-xs text-base-content/50"
-              >
-                -
-              </span>
-            </td>
             <td>
               <div class="flex gap-2">
                 <slot
@@ -153,10 +136,6 @@ const emit = defineEmits<{
 
 const state = computed<LoadState>(() => (props.loading ? 'loading' : 'idle'));
 const items = computed(() => props.items);
-
-function formatRelative(iso: string) {
-  return new Date(iso).toLocaleString();
-}
 
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;

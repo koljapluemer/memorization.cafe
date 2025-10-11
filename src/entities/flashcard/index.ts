@@ -1,11 +1,4 @@
 import { liveQuery, type Observable, type Table } from 'dexie';
-import {
-  createEmptyCard,
-  fsrs,
-  Rating,
-  type Card,
-  type Grade,
-} from 'ts-fsrs';
 
 import { parseCsv, toCsv, downloadCsv } from '../../dumb/csv-utils';
 
@@ -14,11 +7,9 @@ export interface FlashcardRecord {
   front: string;
   back: string;
   learningItemId: string;
+  learningProgressId: string | null;
   createdAt: string;
   updatedAt: string;
-  nextReview: string | null;
-  fsrsCard: Card;
-  lastReviewedAt: string | null;
 }
 
 export interface FlashcardDraft {
@@ -32,28 +23,21 @@ export type FlashcardRepository = {
   get: (id: string) => Promise<FlashcardRecord | undefined>;
   create: (draft: FlashcardDraft) => Promise<string>;
   update: (id: string, draft: FlashcardDraft) => Promise<void>;
+  updateProgressId: (id: string, progressId: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
-  getNextDue: (now: Date) => Promise<FlashcardRecord | undefined>;
-  getNextNew: () => Promise<FlashcardRecord | undefined>;
-  review: (id: string, grade: Grade, now: Date) => Promise<FlashcardRecord | undefined>;
   importFromCsv: (csvText: string, learningItemId?: string) => Promise<number>;
   downloadDemoCsv: () => void;
 };
 
-const scheduler = fsrs();
-
 function createRecordFromDraft(draft: FlashcardDraft): Omit<FlashcardRecord, 'id'> {
   const now = new Date();
-  const card = createEmptyCard(now);
   return {
     front: draft.front.trim(),
     back: draft.back.trim(),
     learningItemId: draft.learningItemId,
+    learningProgressId: null,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
-    nextReview: card.due ? card.due.toISOString() : null,
-    fsrsCard: card,
-    lastReviewedAt: null,
   };
 }
 
@@ -93,47 +77,13 @@ export function createFlashcardRepository(db: {
         updatedAt: nowIso,
       });
     },
+    async updateProgressId(id: string, progressId: string) {
+      await flashcards.update(id, {
+        learningProgressId: progressId,
+      });
+    },
     remove(id: string) {
       return flashcards.delete(id);
-    },
-    getNextDue(now: Date) {
-      const iso = now.toISOString();
-      return flashcards
-        .where('nextReview')
-        .belowOrEqual(iso)
-        .sortBy('nextReview')
-        .then((records) => records[0]);
-    },
-    async getNextNew() {
-      return flashcards
-        .filter((record) => record.fsrsCard.reps === 0)
-        .first();
-    },
-    async review(id: string, grade: Grade, now: Date) {
-      const record = await flashcards.get(id);
-      if (!record) {
-        return undefined;
-      }
-
-      const result = scheduler.next(record.fsrsCard, now, grade);
-      const nextCard = result.card;
-      const nextReview = nextCard.due ? nextCard.due.toISOString() : null;
-      const lastReviewedAt = result.log.review.toISOString();
-
-      await flashcards.update(id, {
-        fsrsCard: nextCard,
-        nextReview,
-        lastReviewedAt,
-        updatedAt: lastReviewedAt,
-      });
-
-      return {
-        ...record,
-        fsrsCard: nextCard,
-        nextReview,
-        lastReviewedAt,
-        updatedAt: lastReviewedAt,
-      } satisfies FlashcardRecord;
     },
     async importFromCsv(csvText: string, learningItemId?: string): Promise<number> {
       const rows = parseCsv(csvText);
@@ -182,6 +132,3 @@ export function createFlashcardRepository(db: {
     },
   };
 }
-
-export { Rating };
-export type { Grade };

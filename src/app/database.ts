@@ -5,12 +5,14 @@ import type { FlashcardRecord } from '../entities/flashcard';
 import type { VerbatimItemRecord } from '../entities/verbatim-item';
 import type { CollectionRecord } from '../entities/collection';
 import type { LearningItemRecord } from '../entities/learning-item';
+import type { LearningProgress } from '../entities/learning-progress';
 
 export class MemorizationDB extends Dexie {
   flashcards!: Table<FlashcardRecord, string>;
   verbatimItems!: Table<VerbatimItemRecord, string>;
   collections!: Table<CollectionRecord, string>;
   learningItems!: Table<LearningItemRecord, string>;
+  learningProgress!: Table<LearningProgress, string>;
 
   constructor() {
     super('memorizationCafe', { addons: [dexieCloud] });
@@ -39,6 +41,14 @@ export class MemorizationDB extends Dexie {
       verbatimItems: '@id, updatedAt, nextReview, createdAt, learningItemId',
       collections: '@id, updatedAt, createdAt',
       learningItems: '@id, updatedAt, createdAt, collectionId',
+    });
+
+    this.version(6).stores({
+      flashcards: '@id, updatedAt, createdAt, learningItemId, learningProgressId',
+      verbatimItems: '@id, updatedAt, createdAt, learningItemId, learningProgressId',
+      collections: '@id, updatedAt, createdAt',
+      learningItems: '@id, updatedAt, createdAt, collectionId',
+      learningProgress: '@id, userId, due',
     });
 
     // Configure Dexie Cloud - this is app-level config, not user-level

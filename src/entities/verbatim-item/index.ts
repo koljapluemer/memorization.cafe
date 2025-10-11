@@ -1,11 +1,4 @@
 import { liveQuery, type Observable, type Table } from 'dexie';
-import {
-  createEmptyCard,
-  fsrs,
-  Rating,
-  type Card,
-  type Grade,
-} from 'ts-fsrs';
 
 import { parseCsv, toCsv, downloadCsv } from '../../dumb/csv-utils';
 
@@ -15,11 +8,9 @@ export interface VerbatimItemRecord {
   toMemorize: string;
   postExercise: string;
   learningItemId: string;
+  learningProgressId: string | null;
   createdAt: string;
   updatedAt: string;
-  nextReview: string | null;
-  fsrsCard: Card;
-  lastReviewedAt: string | null;
 }
 
 export interface VerbatimDraft {
@@ -34,15 +25,11 @@ export type VerbatimRepository = {
   get: (id: string) => Promise<VerbatimItemRecord | undefined>;
   create: (draft: VerbatimDraft) => Promise<string>;
   update: (id: string, draft: VerbatimDraft) => Promise<void>;
+  updateProgressId: (id: string, progressId: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
-  getNextDue: (now: Date) => Promise<VerbatimItemRecord | undefined>;
-  getNextNew: () => Promise<VerbatimItemRecord | undefined>;
-  review: (id: string, grade: Grade, now: Date) => Promise<VerbatimItemRecord | undefined>;
   importFromCsv: (csvText: string, learningItemId?: string) => Promise<number>;
   downloadDemoCsv: () => void;
 };
-
-const scheduler = fsrs();
 
 function sanitizeDraft(draft: VerbatimDraft): VerbatimDraft {
   return {
@@ -55,18 +42,15 @@ function sanitizeDraft(draft: VerbatimDraft): VerbatimDraft {
 
 function createRecordFromDraft(draft: VerbatimDraft): Omit<VerbatimItemRecord, 'id'> {
   const now = new Date();
-  const card = createEmptyCard(now);
   const sanitized = sanitizeDraft(draft);
   return {
     preExercise: sanitized.preExercise,
     toMemorize: sanitized.toMemorize,
     postExercise: sanitized.postExercise,
     learningItemId: sanitized.learningItemId,
+    learningProgressId: null,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
-    nextReview: card.due ? card.due.toISOString() : null,
-    fsrsCard: card,
-    lastReviewedAt: null,
   };
 }
 
@@ -99,45 +83,13 @@ export function createVerbatimRepository(db: {
         updatedAt: nowIso,
       });
     },
+    async updateProgressId(id: string, progressId: string) {
+      await verbatimItems.update(id, {
+        learningProgressId: progressId,
+      });
+    },
     remove(id: string) {
       return verbatimItems.delete(id);
-    },
-    getNextDue(now: Date) {
-      const iso = now.toISOString();
-      return verbatimItems
-        .where('nextReview')
-        .belowOrEqual(iso)
-        .sortBy('nextReview')
-        .then((records) => records[0]);
-    },
-    getNextNew() {
-      return verbatimItems.filter((record) => record.fsrsCard.reps === 0).first();
-    },
-    async review(id: string, grade: Grade, now: Date) {
-      const record = await verbatimItems.get(id);
-      if (!record) {
-        return undefined;
-      }
-
-      const result = scheduler.next(record.fsrsCard, now, grade);
-      const nextCard = result.card;
-      const nextReview = nextCard.due ? nextCard.due.toISOString() : null;
-      const lastReviewedAt = result.log.review.toISOString();
-
-      await verbatimItems.update(id, {
-        fsrsCard: nextCard,
-        nextReview,
-        updatedAt: lastReviewedAt,
-        lastReviewedAt,
-      });
-
-      return {
-        ...record,
-        fsrsCard: nextCard,
-        nextReview,
-        updatedAt: lastReviewedAt,
-        lastReviewedAt,
-      } satisfies VerbatimItemRecord;
     },
     async importFromCsv(csvText: string, learningItemId?: string): Promise<number> {
       const rows = parseCsv(csvText);
@@ -189,6 +141,3 @@ export function createVerbatimRepository(db: {
     },
   };
 }
-
-export { Rating };
-export type { Grade };

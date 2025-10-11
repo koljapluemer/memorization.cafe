@@ -176,24 +176,23 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import type { Grade } from 'ts-fsrs';
+import { Rating } from 'ts-fsrs';
 
 import FlashcardStudyPanel from '../../features/flashcard-study/FlashcardStudyPanel.vue';
 import MarkdownPreview from '../../dumb/MarkdownPreview.vue';
-import { useFlashcardRepository, useVerbatimRepository, useCollectionRepository, useLearningItemRepository } from '../../app/providers';
-import type { FlashcardRecord, Grade as FlashcardGrade } from '../../entities/flashcard';
-import { Rating as FlashcardRating } from '../../entities/flashcard';
-import type { VerbatimItemRecord, Grade as VerbatimGrade } from '../../entities/verbatim-item';
+import { useFlashcardRepository, useVerbatimRepository, useCollectionRepository, useLearningItemRepository, useLearningProgressRepository, useDatabase } from '../../app/providers';
+import type { FlashcardRecord } from '../../entities/flashcard';
+import type { VerbatimItemRecord } from '../../entities/verbatim-item';
+import type { LearningProgress } from '../../entities/learning-progress';
 import type { CollectionRecord } from '../../entities/collection';
 import type { LearningItemRecord } from '../../entities/learning-item';
-
-type Grade = FlashcardGrade | VerbatimGrade;
 
 interface UnifiedItem {
   id: string;
   type: 'flashcard' | 'verbatim';
   data: FlashcardRecord | VerbatimItemRecord;
-  nextReview: string | null;
-  reps: number;
+  progress: LearningProgress | null;
   learningItemId: string;
 }
 
@@ -210,11 +209,15 @@ const flashcardRepository = useFlashcardRepository();
 const verbatimRepository = useVerbatimRepository();
 const collectionRepository = useCollectionRepository();
 const learningItemRepository = useLearningItemRepository();
+const learningProgressRepository = useLearningProgressRepository();
+const db = useDatabase();
 
 const allFlashcards = ref<FlashcardRecord[]>([]);
 const allVerbatimItems = ref<VerbatimItemRecord[]>([]);
 const allLearningItems = ref<LearningItemRecord[]>([]);
+const allProgress = ref<LearningProgress[]>([]);
 const collections = ref<CollectionRecord[]>([]);
+const currentUserId = ref<string>('local');
 
 const currentItem = ref<UnifiedItem | null>(null);
 const currentItemLabel = ref('');
@@ -230,9 +233,13 @@ const filterCollectionId = ref<string>('');
 let flashcardSubscription: { unsubscribe: () => void } | null = null;
 let verbatimSubscription: { unsubscribe: () => void } | null = null;
 let learningItemSubscription: { unsubscribe: () => void } | null = null;
+let progressSubscription: { unsubscribe: () => void } | null = null;
 let collectionSubscription: { unsubscribe: () => void } | null = null;
 
 onMounted(() => {
+  // Get current user ID
+  currentUserId.value = db.cloud.currentUserId ?? 'local';
+
   // Read filters from URL on mount
   const modalityParam = route.query.modality as string | undefined;
   if (modalityParam === 'flashcards' || modalityParam === 'verbatim') {
@@ -280,6 +287,17 @@ onMounted(() => {
     },
   });
 
+  progressSubscription = learningProgressRepository.watchByUser(currentUserId.value).subscribe({
+    next(progress) {
+      allProgress.value = progress;
+      checkLoadingComplete();
+    },
+    error(error) {
+      reportError('Failed to observe learning progress', error);
+      checkLoadingComplete();
+    },
+  });
+
   collectionSubscription = collectionRepository.watchAll().subscribe({
     next(cols) {
       collections.value = cols;
@@ -294,6 +312,7 @@ onBeforeUnmount(() => {
   flashcardSubscription?.unsubscribe();
   verbatimSubscription?.unsubscribe();
   learningItemSubscription?.unsubscribe();
+  progressSubscription?.unsubscribe();
   collectionSubscription?.unsubscribe();
 });
 
@@ -328,15 +347,21 @@ watch(() => route.query, () => {
 const unifiedQueue = computed(() => {
   const items: UnifiedItem[] = [];
 
+  // Create a map of progressId -> progress for quick lookup
+  const progressMap = new Map<string, LearningProgress>();
+  for (const progress of allProgress.value) {
+    progressMap.set(progress.id, progress);
+  }
+
   // Apply modality filter
   if (filterModality.value === 'all' || filterModality.value === 'flashcards') {
     for (const card of allFlashcards.value) {
+      const progress = card.learningProgressId ? progressMap.get(card.learningProgressId) ?? null : null;
       items.push({
         id: card.id,
         type: 'flashcard',
         data: card,
-        nextReview: card.nextReview,
-        reps: card.fsrsCard.reps,
+        progress,
         learningItemId: card.learningItemId,
       });
     }
@@ -344,12 +369,12 @@ const unifiedQueue = computed(() => {
 
   if (filterModality.value === 'all' || filterModality.value === 'verbatim') {
     for (const item of allVerbatimItems.value) {
+      const progress = item.learningProgressId ? progressMap.get(item.learningProgressId) ?? null : null;
       items.push({
         id: item.id,
         type: 'verbatim',
         data: item,
-        nextReview: item.nextReview,
-        reps: item.fsrsCard.reps,
+        progress,
         learningItemId: item.learningItemId,
       });
     }
@@ -370,12 +395,18 @@ const unifiedQueue = computed(() => {
 });
 
 const dueItems = computed(() => {
-  const nowIso = new Date().toISOString();
-  return unifiedQueue.value.filter(item => item.nextReview && item.nextReview <= nowIso);
+  const now = new Date();
+  return unifiedQueue.value.filter(item => {
+    if (!item.progress) return false;
+    return item.progress.due && item.progress.due <= now;
+  });
 });
 
 const newItems = computed(() => {
-  return unifiedQueue.value.filter(item => item.reps === 0);
+  return unifiedQueue.value.filter(item => {
+    if (!item.progress) return true; // No progress = new item
+    return item.progress.reps === 0;
+  });
 });
 
 const dueCount = computed(() => dueItems.value.length);
@@ -400,10 +431,10 @@ const ratingActions: ReadonlyArray<{
   label: string;
   className: string;
 }> = [
-  { rating: FlashcardRating.Again as Grade, label: 'Again', className: 'btn-error' },
-  { rating: FlashcardRating.Hard as Grade, label: 'Hard', className: 'btn-warning' },
-  { rating: FlashcardRating.Good as Grade, label: 'Good', className: 'btn-success' },
-  { rating: FlashcardRating.Easy as Grade, label: 'Easy', className: 'btn-accent' },
+  { rating: Rating.Again as Grade, label: 'Again', className: 'btn-error' },
+  { rating: Rating.Hard as Grade, label: 'Hard', className: 'btn-warning' },
+  { rating: Rating.Good as Grade, label: 'Good', className: 'btn-success' },
+  { rating: Rating.Easy as Grade, label: 'Easy', className: 'btn-accent' },
 ];
 
 const displayedExercise = computed(() => {
@@ -471,11 +502,25 @@ async function grade(rating: Grade) {
 
   isProcessing.value = true;
 
-  if (currentItem.value.type === 'flashcard') {
-    await flashcardRepository.review(currentItem.value.id, rating as FlashcardGrade, new Date());
-  } else if (currentItem.value.type === 'verbatim') {
-    await verbatimRepository.review(currentItem.value.id, rating as VerbatimGrade, new Date());
+  const item = currentItem.value;
+
+  // Get or create progress
+  let progressId = item.data.learningProgressId;
+
+  if (!progressId) {
+    // Create new progress for this user
+    progressId = await learningProgressRepository.create(currentUserId.value);
+
+    // Update the item to reference this progress
+    if (item.type === 'flashcard') {
+      await flashcardRepository.updateProgressId(item.id, progressId);
+    } else {
+      await verbatimRepository.updateProgressId(item.id, progressId);
+    }
   }
+
+  // Review the progress
+  await learningProgressRepository.review(progressId, rating, new Date());
 
   stage.value = 'idle';
   currentItem.value = null;

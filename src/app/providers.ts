@@ -18,11 +18,16 @@ import {
   createLearningItemRepository,
   type LearningItemRepository,
 } from '../entities/learning-item';
+import {
+  createLearningProgressRepository,
+  type LearningProgressRepository,
+} from '../entities/learning-progress';
 
 const flashcardRepositoryKey: InjectionKey<FlashcardRepository> = Symbol('flashcardRepository');
 const verbatimRepositoryKey: InjectionKey<VerbatimRepository> = Symbol('verbatimRepository');
 const collectionRepositoryKey: InjectionKey<CollectionRepository> = Symbol('collectionRepository');
 const learningItemRepositoryKey: InjectionKey<LearningItemRepository> = Symbol('learningItemRepository');
+const learningProgressRepositoryKey: InjectionKey<LearningProgressRepository> = Symbol('learningProgressRepository');
 const databaseKey: InjectionKey<MemorizationDB> = Symbol('database');
 
 const db = new MemorizationDB();
@@ -31,12 +36,14 @@ const flashcardRepository = createFlashcardRepository(db);
 const verbatimRepository = createVerbatimRepository(db);
 const collectionRepository = createCollectionRepository(db);
 const learningItemRepository = createLearningItemRepository(db);
+const learningProgressRepository = createLearningProgressRepository(db);
 
 export function registerAppProviders(app: App) {
   app.provide(flashcardRepositoryKey, flashcardRepository);
   app.provide(verbatimRepositoryKey, verbatimRepository);
   app.provide(collectionRepositoryKey, collectionRepository);
   app.provide(learningItemRepositoryKey, learningItemRepository);
+  app.provide(learningProgressRepositoryKey, learningProgressRepository);
   app.provide(databaseKey, db);
 }
 
@@ -68,6 +75,14 @@ export function useLearningItemRepository(): LearningItemRepository {
   const repository = inject(learningItemRepositoryKey);
   if (!repository) {
     throw new Error('LearningItemRepository not provided');
+  }
+  return repository;
+}
+
+export function useLearningProgressRepository(): LearningProgressRepository {
+  const repository = inject(learningProgressRepositoryKey);
+  if (!repository) {
+    throw new Error('LearningProgressRepository not provided');
   }
   return repository;
 }

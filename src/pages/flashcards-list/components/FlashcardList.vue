@@ -46,8 +46,6 @@
             </th>
             <th>Front</th>
             <th>Back</th>
-            <th>Reps</th>
-            <th>Next Review</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -75,21 +73,6 @@
               <div class="max-w-xs">
                 <MarkdownPreview :source="truncate(cardItem.back, 100)" />
               </div>
-            </td>
-            <td>{{ cardItem.fsrsCard.reps }}</td>
-            <td>
-              <span
-                v-if="cardItem.nextReview"
-                class="text-xs"
-              >
-                {{ formatRelative(cardItem.nextReview) }}
-              </span>
-              <span
-                v-else
-                class="text-xs text-base-content/50"
-              >
-                -
-              </span>
             </td>
             <td>
               <div class="flex gap-2">
@@ -129,10 +112,6 @@ const emit = defineEmits<{
 
 const state = computed<LoadState>(() => (props.loading ? 'loading' : 'idle'));
 const items = computed(() => props.items);
-
-function formatRelative(iso: string) {
-  return new Date(iso).toLocaleString();
-}
 
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
