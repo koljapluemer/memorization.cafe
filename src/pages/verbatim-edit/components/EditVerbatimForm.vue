@@ -3,16 +3,20 @@
     class="space-y-4"
     @submit.prevent="onSubmit"
   >
-    <label class="form-control w-full">
-      <span class="label-text font-medium">Pre exercise (optional)</span>
+    <label class="form-control">
+      <div class="label">
+        <span class="label-text font-medium">Pre exercise (optional)</span>
+      </div>
       <textarea
         v-model="localForm.preExercise"
         class="textarea textarea-bordered h-32"
         placeholder="Context or setup"
       />
     </label>
-    <label class="form-control w-full">
-      <span class="label-text font-medium">To memorise *</span>
+    <label class="form-control">
+      <div class="label">
+        <span class="label-text font-medium">To memorise *</span>
+      </div>
       <textarea
         v-model="localForm.toMemorize"
         class="textarea textarea-bordered h-40"
@@ -20,8 +24,10 @@
         required
       />
     </label>
-    <label class="form-control w-full">
-      <span class="label-text font-medium">Post exercise (optional)</span>
+    <label class="form-control">
+      <div class="label">
+        <span class="label-text font-medium">Post exercise (optional)</span>
+      </div>
       <textarea
         v-model="localForm.postExercise"
         class="textarea textarea-bordered h-32"
@@ -54,6 +60,7 @@ interface VerbatimFormState {
   preExercise: string;
   toMemorize: string;
   postExercise: string;
+  learningItemId: string;
 }
 
 interface Props {
@@ -77,6 +84,7 @@ watch(
     localForm.preExercise = value.preExercise;
     localForm.toMemorize = value.toMemorize;
     localForm.postExercise = value.postExercise;
+    localForm.learningItemId = value.learningItemId;
   },
 );
 

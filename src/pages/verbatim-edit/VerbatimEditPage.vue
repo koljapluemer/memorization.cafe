@@ -36,15 +36,17 @@ import { computed, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 
 import EditVerbatimForm from './components/EditVerbatimForm.vue';
-import { useVerbatimRepository } from '../../app/providers';
+import { useVerbatimRepository, useLearningItemRepository } from '../../app/providers';
 
 interface VerbatimFormState {
   preExercise: string;
   toMemorize: string;
   postExercise: string;
+  learningItemId: string;
 }
 
 const repository = useVerbatimRepository();
+const learningItemRepository = useLearningItemRepository();
 const route = useRoute();
 const router = useRouter();
 
@@ -52,6 +54,7 @@ const form = reactive<VerbatimFormState>({
   preExercise: '',
   toMemorize: '',
   postExercise: '',
+  learningItemId: '',
 });
 
 const currentId = ref<string | null>(null);
@@ -60,7 +63,7 @@ const isSaving = ref(false);
 
 const isEditing = computed(() => Boolean(currentId.value));
 const isBlockingSubmit = computed(
-  () => isSaving.value || !form.toMemorize.trim(),
+  () => isSaving.value || !form.toMemorize.trim() || !form.learningItemId,
 );
 
 watch(
@@ -69,6 +72,17 @@ watch(
     const idParam = Array.isArray(value) ? value[0] : value;
     currentId.value = idParam ?? null;
     void loadRecord();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => route.query.learningItemId,
+  (value) => {
+    const itemIdParam = Array.isArray(value) ? value[0] : value;
+    if (itemIdParam && !currentId.value) {
+      form.learningItemId = itemIdParam;
+    }
   },
   { immediate: true },
 );
@@ -88,6 +102,7 @@ async function loadRecord() {
     form.preExercise = record.preExercise;
     form.toMemorize = record.toMemorize;
     form.postExercise = record.postExercise;
+    form.learningItemId = record.learningItemId;
   } catch (error) {
     reportError('Failed to load passage', error);
   } finally {
@@ -101,17 +116,29 @@ async function handleSubmit() {
   }
   isSaving.value = true;
   try {
+    let actualLearningItemId = form.learningItemId;
+
+    if (!actualLearningItemId && !currentId.value) {
+      actualLearningItemId = await learningItemRepository.create({
+        name: form.toMemorize.substring(0, 50) + (form.toMemorize.length > 50 ? '...' : ''),
+        description: '',
+        collectionId: null,
+      });
+    }
+
     if (currentId.value) {
       await repository.update(currentId.value, {
         preExercise: form.preExercise,
         toMemorize: form.toMemorize,
         postExercise: form.postExercise,
+        learningItemId: actualLearningItemId,
       });
     } else {
       await repository.create({
         preExercise: form.preExercise,
         toMemorize: form.toMemorize,
         postExercise: form.postExercise,
+        learningItemId: actualLearningItemId,
       });
     }
     await router.push('/verbatim/list');
@@ -131,15 +158,20 @@ function resetForm() {
 }
 
 function clearForm() {
+  const learningItemIdFromQuery = Array.isArray(route.query.learningItemId)
+    ? route.query.learningItemId[0]
+    : route.query.learningItemId;
   form.preExercise = '';
   form.toMemorize = '';
   form.postExercise = '';
+  form.learningItemId = learningItemIdFromQuery || '';
 }
 
 function updateForm(value: VerbatimFormState) {
   form.preExercise = value.preExercise;
   form.toMemorize = value.toMemorize;
   form.postExercise = value.postExercise;
+  form.learningItemId = value.learningItemId;
 }
 
 function reportError(message: string, error: unknown) {

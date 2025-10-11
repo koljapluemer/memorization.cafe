@@ -36,20 +36,23 @@ import { computed, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 
 import EditFlashcardForm from './components/EditFlashcardForm.vue';
-import { useFlashcardRepository } from '../../app/providers';
+import { useFlashcardRepository, useLearningItemRepository } from '../../app/providers';
 
 interface FlashcardFormState {
   front: string;
   back: string;
+  learningItemId: string;
 }
 
 const repository = useFlashcardRepository();
+const learningItemRepository = useLearningItemRepository();
 const route = useRoute();
 const router = useRouter();
 
 const form = reactive<FlashcardFormState>({
   front: '',
   back: '',
+  learningItemId: '',
 });
 
 const currentId = ref<string | null>(null);
@@ -61,7 +64,8 @@ const isBlockingSubmit = computed(
   () =>
     isSaving.value ||
     !form.front.trim() ||
-    !form.back.trim(),
+    !form.back.trim() ||
+    !form.learningItemId,
 );
 
 watch(
@@ -70,6 +74,17 @@ watch(
     const idParam = Array.isArray(value) ? value[0] : value;
     currentId.value = idParam ?? null;
     void loadRecord();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => route.query.learningItemId,
+  (value) => {
+    const itemIdParam = Array.isArray(value) ? value[0] : value;
+    if (itemIdParam && !currentId.value) {
+      form.learningItemId = itemIdParam;
+    }
   },
   { immediate: true },
 );
@@ -88,6 +103,7 @@ async function loadRecord() {
     }
     form.front = record.front;
     form.back = record.back;
+    form.learningItemId = record.learningItemId;
   } catch (error) {
     reportError('Failed to load flashcard', error);
   } finally {
@@ -101,15 +117,27 @@ async function handleSubmit() {
   }
   isSaving.value = true;
   try {
+    let actualLearningItemId = form.learningItemId;
+
+    if (!actualLearningItemId && !currentId.value) {
+      actualLearningItemId = await learningItemRepository.create({
+        name: form.front.substring(0, 50) + (form.front.length > 50 ? '...' : ''),
+        description: '',
+        collectionId: null,
+      });
+    }
+
     if (currentId.value) {
       await repository.update(currentId.value, {
         front: form.front,
         back: form.back,
+        learningItemId: actualLearningItemId,
       });
     } else {
       await repository.create({
         front: form.front,
         back: form.back,
+        learningItemId: actualLearningItemId,
       });
     }
     await router.push('/flashcards/list');
@@ -129,13 +157,18 @@ function resetForm() {
 }
 
 function clearForm() {
+  const learningItemIdFromQuery = Array.isArray(route.query.learningItemId)
+    ? route.query.learningItemId[0]
+    : route.query.learningItemId;
   form.front = '';
   form.back = '';
+  form.learningItemId = learningItemIdFromQuery || '';
 }
 
 function updateForm(value: FlashcardFormState) {
   form.front = value.front;
   form.back = value.back;
+  form.learningItemId = value.learningItemId;
 }
 
 function reportError(message: string, error: unknown) {

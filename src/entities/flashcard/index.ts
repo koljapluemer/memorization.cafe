@@ -6,12 +6,14 @@ import {
   type Card,
   type Grade,
 } from 'ts-fsrs';
+
 import { parseCsv, toCsv, downloadCsv } from '../../dumb/csv-utils';
 
 export interface FlashcardRecord {
   id: string;
   front: string;
   back: string;
+  learningItemId: string;
   createdAt: string;
   updatedAt: string;
   nextReview: string | null;
@@ -22,6 +24,7 @@ export interface FlashcardRecord {
 export interface FlashcardDraft {
   front: string;
   back: string;
+  learningItemId: string;
 }
 
 export type FlashcardRepository = {
@@ -33,7 +36,7 @@ export type FlashcardRepository = {
   getNextDue: (now: Date) => Promise<FlashcardRecord | undefined>;
   getNextNew: () => Promise<FlashcardRecord | undefined>;
   review: (id: string, grade: Grade, now: Date) => Promise<FlashcardRecord | undefined>;
-  importFromCsv: (csvText: string) => Promise<number>;
+  importFromCsv: (csvText: string, learningItemId?: string) => Promise<number>;
   downloadDemoCsv: () => void;
 };
 
@@ -45,6 +48,7 @@ function createRecordFromDraft(draft: FlashcardDraft): Omit<FlashcardRecord, 'id
   return {
     front: draft.front.trim(),
     back: draft.back.trim(),
+    learningItemId: draft.learningItemId,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     nextReview: card.due ? card.due.toISOString() : null,
@@ -57,13 +61,15 @@ function sanitizeDraft(draft: FlashcardDraft): FlashcardDraft {
   return {
     front: draft.front.trim(),
     back: draft.back.trim(),
+    learningItemId: draft.learningItemId,
   };
 }
 
 export function createFlashcardRepository(db: {
   flashcards: Table<FlashcardRecord, string>;
+  learningItems: Table<{ id?: string; name: string; description: string; collectionId: string | null; createdAt: string; updatedAt: string }, string>;
 }): FlashcardRepository {
-  const { flashcards } = db;
+  const { flashcards, learningItems } = db;
 
   return {
     watchAll(): Observable<FlashcardRecord[]> {
@@ -83,6 +89,7 @@ export function createFlashcardRepository(db: {
       await flashcards.update(id, {
         front: sanitized.front,
         back: sanitized.back,
+        learningItemId: sanitized.learningItemId,
         updatedAt: nowIso,
       });
     },
@@ -128,12 +135,25 @@ export function createFlashcardRepository(db: {
         updatedAt: lastReviewedAt,
       } satisfies FlashcardRecord;
     },
-    async importFromCsv(csvText: string): Promise<number> {
+    async importFromCsv(csvText: string, learningItemId?: string): Promise<number> {
       const rows = parseCsv(csvText);
       if (rows.length === 0) return 0;
 
-      const hasHeader = rows[0][0]?.toLowerCase() === 'front';
+      const hasHeader = rows[0]?.[0]?.toLowerCase() === 'front';
       const dataRows = hasHeader ? rows.slice(1) : rows;
+
+      let actualLearningItemId = learningItemId;
+      if (!actualLearningItemId) {
+        const now = new Date();
+        const itemRecord = {
+          name: 'Imported Flashcards',
+          description: `Imported on ${now.toLocaleString()}`,
+          collectionId: null,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        };
+        actualLearningItemId = (await learningItems.add(itemRecord)) as string;
+      }
 
       let imported = 0;
       for (const row of dataRows) {
@@ -141,6 +161,7 @@ export function createFlashcardRepository(db: {
           const draft: FlashcardDraft = {
             front: row[0].trim(),
             back: row[1].trim(),
+            learningItemId: actualLearningItemId,
           };
           if (draft.front && draft.back) {
             const record = createRecordFromDraft(draft);

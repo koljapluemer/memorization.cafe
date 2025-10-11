@@ -6,6 +6,7 @@ import {
   type Card,
   type Grade,
 } from 'ts-fsrs';
+
 import { parseCsv, toCsv, downloadCsv } from '../../dumb/csv-utils';
 
 export interface VerbatimItemRecord {
@@ -13,6 +14,7 @@ export interface VerbatimItemRecord {
   preExercise: string;
   toMemorize: string;
   postExercise: string;
+  learningItemId: string;
   createdAt: string;
   updatedAt: string;
   nextReview: string | null;
@@ -24,6 +26,7 @@ export interface VerbatimDraft {
   preExercise: string;
   toMemorize: string;
   postExercise: string;
+  learningItemId: string;
 }
 
 export type VerbatimRepository = {
@@ -35,7 +38,7 @@ export type VerbatimRepository = {
   getNextDue: (now: Date) => Promise<VerbatimItemRecord | undefined>;
   getNextNew: () => Promise<VerbatimItemRecord | undefined>;
   review: (id: string, grade: Grade, now: Date) => Promise<VerbatimItemRecord | undefined>;
-  importFromCsv: (csvText: string) => Promise<number>;
+  importFromCsv: (csvText: string, learningItemId?: string) => Promise<number>;
   downloadDemoCsv: () => void;
 };
 
@@ -46,6 +49,7 @@ function sanitizeDraft(draft: VerbatimDraft): VerbatimDraft {
     preExercise: draft.preExercise.trim(),
     toMemorize: draft.toMemorize.trim(),
     postExercise: draft.postExercise.trim(),
+    learningItemId: draft.learningItemId,
   };
 }
 
@@ -54,7 +58,10 @@ function createRecordFromDraft(draft: VerbatimDraft): Omit<VerbatimItemRecord, '
   const card = createEmptyCard(now);
   const sanitized = sanitizeDraft(draft);
   return {
-    ...sanitized,
+    preExercise: sanitized.preExercise,
+    toMemorize: sanitized.toMemorize,
+    postExercise: sanitized.postExercise,
+    learningItemId: sanitized.learningItemId,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     nextReview: card.due ? card.due.toISOString() : null,
@@ -65,8 +72,9 @@ function createRecordFromDraft(draft: VerbatimDraft): Omit<VerbatimItemRecord, '
 
 export function createVerbatimRepository(db: {
   verbatimItems: Table<VerbatimItemRecord, string>;
+  learningItems: Table<{ id?: string; name: string; description: string; collectionId: string | null; createdAt: string; updatedAt: string }, string>;
 }): VerbatimRepository {
-  const { verbatimItems } = db;
+  const { verbatimItems, learningItems } = db;
 
   return {
     watchAll(): Observable<VerbatimItemRecord[]> {
@@ -84,7 +92,10 @@ export function createVerbatimRepository(db: {
       const sanitized = sanitizeDraft(draft);
       const nowIso = new Date().toISOString();
       await verbatimItems.update(id, {
-        ...sanitized,
+        preExercise: sanitized.preExercise,
+        toMemorize: sanitized.toMemorize,
+        postExercise: sanitized.postExercise,
+        learningItemId: sanitized.learningItemId,
         updatedAt: nowIso,
       });
     },
@@ -128,14 +139,27 @@ export function createVerbatimRepository(db: {
         lastReviewedAt,
       } satisfies VerbatimItemRecord;
     },
-    async importFromCsv(csvText: string): Promise<number> {
+    async importFromCsv(csvText: string, learningItemId?: string): Promise<number> {
       const rows = parseCsv(csvText);
       if (rows.length === 0) return 0;
 
       const hasHeader =
-        rows[0][0]?.toLowerCase() === 'preexercise' ||
-        rows[0][0]?.toLowerCase() === 'pre-exercise';
+        rows[0]?.[0]?.toLowerCase() === 'preexercise' ||
+        rows[0]?.[0]?.toLowerCase() === 'pre-exercise';
       const dataRows = hasHeader ? rows.slice(1) : rows;
+
+      let actualLearningItemId = learningItemId;
+      if (!actualLearningItemId) {
+        const now = new Date();
+        const itemRecord = {
+          name: 'Imported Verbatim Items',
+          description: `Imported on ${now.toLocaleString()}`,
+          collectionId: null,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        };
+        actualLearningItemId = (await learningItems.add(itemRecord)) as string;
+      }
 
       let imported = 0;
       for (const row of dataRows) {
@@ -144,6 +168,7 @@ export function createVerbatimRepository(db: {
             preExercise: (row[0] || '').trim(),
             toMemorize: (row[1] || '').trim(),
             postExercise: (row[2] || '').trim(),
+            learningItemId: actualLearningItemId,
           };
           if (draft.toMemorize) {
             const record = createRecordFromDraft(draft);

@@ -55,7 +55,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+
 import { useDatabase } from '../../app/providers';
 
 const db = useDatabase();
@@ -74,7 +75,9 @@ onMounted(() => {
       userName.value = user?.name ?? '';
     },
     error: (err) => {
-      console.error('User subscription error:', err);
+      if (typeof globalThis !== 'undefined' && globalThis.console) {
+        globalThis.console.error('User subscription error:', err);
+      }
     },
   });
 });

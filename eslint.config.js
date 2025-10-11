@@ -19,6 +19,10 @@ export default [
         sourceType: "module",
         extraFileExtensions: [".vue"],
       },
+      globals: {
+        HTMLInputElement: "readonly",
+        Event: "readonly",
+      },
     },
   },
   js.configs.recommended,

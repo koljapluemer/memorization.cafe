@@ -59,6 +59,49 @@ const routes = [
     component: () => import('../pages/verbatim-queue/VerbatimQueuePage.vue'),
   },
   {
+    path: '/collections',
+    redirect: '/collections/list',
+  },
+  {
+    path: '/collections/list',
+    name: 'collections-list',
+    component: () => import('../pages/collections-list/CollectionsListPage.vue'),
+  },
+  {
+    path: '/collections/edit',
+    name: 'collections-create',
+    component: () => import('../pages/collections-edit/CollectionsEditPage.vue'),
+  },
+  {
+    path: '/collections/edit/:id',
+    name: 'collections-edit',
+    component: () => import('../pages/collections-edit/CollectionsEditPage.vue'),
+  },
+  {
+    path: '/collections/:id/items',
+    name: 'collection-items',
+    component: () => import('../pages/collection-items/CollectionItemsPage.vue'),
+  },
+  {
+    path: '/learning-items',
+    redirect: '/learning-items/list',
+  },
+  {
+    path: '/learning-items/list',
+    name: 'learning-items-list',
+    component: () => import('../pages/learning-items-list/LearningItemsListPage.vue'),
+  },
+  {
+    path: '/learning-items/edit',
+    name: 'learning-items-create',
+    component: () => import('../pages/learning-items-edit/LearningItemsEditPage.vue'),
+  },
+  {
+    path: '/learning-items/edit/:id',
+    name: 'learning-items-edit',
+    component: () => import('../pages/learning-items-edit/LearningItemsEditPage.vue'),
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('../pages/settings/SettingsPage.vue'),

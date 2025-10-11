@@ -3,8 +3,10 @@
     class="space-y-4"
     @submit.prevent="onSubmit"
   >
-    <label class="form-control w-full">
-      <span class="label-text font-medium">Front</span>
+    <label class="form-control">
+      <div class="label">
+        <span class="label-text font-medium">Front</span>
+      </div>
       <textarea
         v-model="localForm.front"
         class="textarea textarea-bordered h-40"
@@ -12,8 +14,10 @@
         required
       />
     </label>
-    <label class="form-control w-full">
-      <span class="label-text font-medium">Back</span>
+    <label class="form-control">
+      <div class="label">
+        <span class="label-text font-medium">Back</span>
+      </div>
       <textarea
         v-model="localForm.back"
         class="textarea textarea-bordered h-40"
@@ -46,6 +50,7 @@ import { computed, reactive, watch } from 'vue';
 interface FlashcardFormState {
   front: string;
   back: string;
+  learningItemId: string;
 }
 
 interface Props {
@@ -68,6 +73,7 @@ watch(
   (value) => {
     localForm.front = value.front;
     localForm.back = value.back;
+    localForm.learningItemId = value.learningItemId;
   },
 );
 
