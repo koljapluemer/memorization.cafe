@@ -30,9 +30,9 @@ const routes = [
     component: () => import('../pages/flashcards-edit/FlashcardsEditPage.vue'),
   },
   {
-    path: '/flashcards/queue',
-    name: 'flashcards-queue',
-    component: () => import('../pages/flashcards-queue/FlashcardsQueuePage.vue'),
+    path: '/study',
+    name: 'study',
+    component: () => import('../pages/study/StudyPage.vue'),
   },
   {
     path: '/verbatim',
@@ -52,11 +52,6 @@ const routes = [
     path: '/verbatim/edit/:id',
     name: 'verbatim-edit',
     component: () => import('../pages/verbatim-edit/VerbatimEditPage.vue'),
-  },
-  {
-    path: '/verbatim/queue',
-    name: 'verbatim-queue',
-    component: () => import('../pages/verbatim-queue/VerbatimQueuePage.vue'),
   },
   {
     path: '/collections',

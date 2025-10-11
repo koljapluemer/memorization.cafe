@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
-import { FileText, Layers, LayoutDashboard, Settings, FolderOpen, BookOpen } from 'lucide-vue-next';
+import { FileText, Layers, LayoutDashboard, Settings, FolderOpen, BookOpen, GraduationCap } from 'lucide-vue-next';
 
 const route = useRoute();
 
@@ -54,6 +54,12 @@ const navItems = computed(() => [
     to: '/dashboard',
     icon: LayoutDashboard,
     active: route.path.startsWith('/dashboard'),
+  },
+  {
+    label: 'Study',
+    to: '/study',
+    icon: GraduationCap,
+    active: route.path.startsWith('/study'),
   },
   {
     label: 'Collections',
