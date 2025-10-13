@@ -4,5 +4,5 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss(), VitePWA()],
+  plugins: [vue(), tailwindcss(), VitePWA({ registerType: "autoUpdate" })],
 });

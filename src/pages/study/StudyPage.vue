@@ -179,7 +179,7 @@ import { useRoute, useRouter } from 'vue-router';
 import type { Grade } from 'ts-fsrs';
 import { Rating } from 'ts-fsrs';
 
-import FlashcardStudyPanel from '../../features/flashcard-study/FlashcardStudyPanel.vue';
+import FlashcardStudyPanel from './FlashcardStudyPanel.vue';
 import MarkdownPreview from '../../dumb/MarkdownPreview.vue';
 import { useFlashcardRepository, useVerbatimRepository, useCollectionRepository, useLearningItemRepository, useLearningProgressRepository, useDatabase } from '../../app/providers';
 import type { FlashcardRecord } from '../../entities/flashcard';
