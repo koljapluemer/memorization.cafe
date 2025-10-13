@@ -3,55 +3,12 @@ import { createRouter, createWebHistory } from 'vue-router';
 const routes = [
   {
     path: '/',
-    redirect: '/dashboard',
-  },
-  {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: () => import('../pages/dashboard/DashboardPage.vue'),
-  },
-  {
-    path: '/flashcards',
-    redirect: '/flashcards/list',
-  },
-  {
-    path: '/flashcards/list',
-    name: 'flashcards-list',
-    component: () => import('../pages/flashcards-list/FlashcardsListPage.vue'),
-  },
-  {
-    path: '/flashcards/edit',
-    name: 'flashcards-create',
-    component: () => import('../pages/flashcards-edit/FlashcardsEditPage.vue'),
-  },
-  {
-    path: '/flashcards/edit/:id',
-    name: 'flashcards-edit',
-    component: () => import('../pages/flashcards-edit/FlashcardsEditPage.vue'),
+    redirect: '/collections/list',
   },
   {
     path: '/study',
     name: 'study',
     component: () => import('../pages/study/StudyPage.vue'),
-  },
-  {
-    path: '/verbatim',
-    redirect: '/verbatim/list',
-  },
-  {
-    path: '/verbatim/list',
-    name: 'verbatim-list',
-    component: () => import('../pages/verbatim-list/VerbatimListPage.vue'),
-  },
-  {
-    path: '/verbatim/edit',
-    name: 'verbatim-create',
-    component: () => import('../pages/verbatim-edit/VerbatimEditPage.vue'),
-  },
-  {
-    path: '/verbatim/edit/:id',
-    name: 'verbatim-edit',
-    component: () => import('../pages/verbatim-edit/VerbatimEditPage.vue'),
   },
   {
     path: '/collections',
@@ -76,25 +33,6 @@ const routes = [
     path: '/collections/:id/items',
     name: 'collection-items',
     component: () => import('../pages/collection-items/CollectionItemsPage.vue'),
-  },
-  {
-    path: '/learning-items',
-    redirect: '/learning-items/list',
-  },
-  {
-    path: '/learning-items/list',
-    name: 'learning-items-list',
-    component: () => import('../pages/learning-items-list/LearningItemsListPage.vue'),
-  },
-  {
-    path: '/learning-items/edit',
-    name: 'learning-items-create',
-    component: () => import('../pages/learning-items-edit/LearningItemsEditPage.vue'),
-  },
-  {
-    path: '/learning-items/edit/:id',
-    name: 'learning-items-edit',
-    component: () => import('../pages/learning-items-edit/LearningItemsEditPage.vue'),
   },
   {
     path: '/settings',

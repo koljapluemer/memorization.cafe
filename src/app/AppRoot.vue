@@ -4,7 +4,7 @@
       <div class="navbar mx-auto w-full max-w-6xl px-4">
         <div class="navbar-start">
           <RouterLink
-            to="/dashboard"
+            to="/collections/list"
             class="text-xl font-semibold"
           >
             Memorization Café
@@ -44,17 +44,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
-import { FileText, Layers, LayoutDashboard, Settings, FolderOpen, BookOpen, GraduationCap } from 'lucide-vue-next';
+import { Settings, FolderOpen, GraduationCap } from 'lucide-vue-next';
 
 const route = useRoute();
 
 const navItems = computed(() => [
-  {
-    label: 'Dashboard',
-    to: '/dashboard',
-    icon: LayoutDashboard,
-    active: route.path.startsWith('/dashboard'),
-  },
   {
     label: 'Study',
     to: '/study',
@@ -66,24 +60,6 @@ const navItems = computed(() => [
     to: '/collections/list',
     icon: FolderOpen,
     active: route.path.startsWith('/collections'),
-  },
-  {
-    label: 'Items',
-    to: '/learning-items/list',
-    icon: BookOpen,
-    active: route.path.startsWith('/learning-items'),
-  },
-  {
-    label: 'Flashcards',
-    to: '/flashcards/list',
-    icon: Layers,
-    active: route.path.startsWith('/flashcards'),
-  },
-  {
-    label: 'Verbatim',
-    to: '/verbatim/list',
-    icon: FileText,
-    active: route.path.startsWith('/verbatim'),
   },
   {
     label: 'Settings',
