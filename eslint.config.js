@@ -21,7 +21,9 @@ export default [
       },
       globals: {
         HTMLInputElement: "readonly",
+        HTMLDialogElement: "readonly",
         Event: "readonly",
+        confirm: "readonly",
       },
     },
   },

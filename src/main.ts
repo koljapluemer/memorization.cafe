@@ -6,6 +6,6 @@ import { registerAppProviders } from './app/providers';
 import './style.css';
 
 const app = createApp(AppRoot);
-registerAppProviders(app);
+registerAppProviders();
 app.use(router);
 app.mount('#app');

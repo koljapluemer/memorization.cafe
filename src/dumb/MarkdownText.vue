@@ -14,11 +14,9 @@ marked.setOptions({
   breaks: true,
 });
 
-interface Props {
-  source: string;
-}
-
-const props = defineProps<Props>();
+const props = defineProps<{
+  text: string;
+}>();
 
 const root = ref<{ innerHTML: string } | null>(null);
 
@@ -35,12 +33,12 @@ async function updateContent(): Promise<void> {
   if (!root.value) {
     return;
   }
-  const html = await renderMarkdown(props.source);
+  const html = await renderMarkdown(props.text);
   root.value.innerHTML = html;
 }
 
 watch(
-  () => props.source,
+  () => props.text,
   () => {
     void updateContent();
   },
