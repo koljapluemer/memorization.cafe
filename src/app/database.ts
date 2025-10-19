@@ -25,6 +25,7 @@ export interface ElaborativeInterrogationConcept {
   collectionId: string;
   name: string;
   description?: string;
+  questionListId?: string; // References QuestionList.id
   realmId?: string;
 }
 
@@ -35,6 +36,14 @@ export interface List {
   items: string[];
   isOrderedList: boolean;
   note?: string;
+  realmId?: string;
+}
+
+export interface QuestionList {
+  id?: string;
+  name: string;
+  questions: string[];
+  isDefault: boolean;
   realmId?: string;
 }
 
@@ -82,6 +91,7 @@ export class MemorizationDatabase extends Dexie {
   lists!: Dexie.Table<List, string>;
   clozes!: Dexie.Table<Cloze, string>;
   learningProgress!: Dexie.Table<LearningProgress, string>;
+  questionLists!: Dexie.Table<QuestionList, string>;
 
   constructor() {
     super('MemorizationDB', { addons: [dexieCloud] });
@@ -108,6 +118,16 @@ export class MemorizationDatabase extends Dexie {
       lists: '@id, collectionId, name',
       clozes: '@id, collectionId',
       learningProgress: '@id, learningItemId, itemType, owner',
+    });
+
+    this.version(4).stores({
+      collections: '@id, name',
+      flashcards: '@id, collectionId',
+      concepts: '@id, collectionId, name',
+      lists: '@id, collectionId, name',
+      clozes: '@id, collectionId',
+      learningProgress: '@id, learningItemId, itemType, owner',
+      questionLists: '@id, name, isDefault',
     });
 
     // Configure Dexie Cloud

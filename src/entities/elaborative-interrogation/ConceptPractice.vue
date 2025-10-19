@@ -37,12 +37,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 
-import { ELABORATIVE_QUESTIONS } from './questions';
-
 import type { ElaborativeInterrogationConcept } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { getRandomItem } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { questionListRepo } from '@/entities/question-list';
 
 
 const props = defineProps<{
@@ -56,8 +55,23 @@ const emit = defineEmits<{
 const selectedQuestion = ref('');
 const answer = ref('');
 
-onMounted(() => {
-  selectedQuestion.value = getRandomItem([...ELABORATIVE_QUESTIONS]) || ELABORATIVE_QUESTIONS[0];
+onMounted(async () => {
+  // Load the appropriate question list
+  let questionList;
+  if (props.concept.questionListId) {
+    questionList = await questionListRepo.getById(props.concept.questionListId);
+  }
+
+  // If no specific list or not found, use default
+  if (!questionList) {
+    questionList = await questionListRepo.getDefault();
+  }
+
+  // Select a random question from the list
+  if (questionList.questions.length > 0) {
+    const randomQuestion = getRandomItem([...questionList.questions]);
+    selectedQuestion.value = randomQuestion || questionList.questions[0] || '';
+  }
 });
 
 async function handleDone() {

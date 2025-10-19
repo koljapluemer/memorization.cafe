@@ -4,6 +4,13 @@
       Settings
     </h1>
 
+    <!-- Question Lists Section -->
+    <div class="mb-8">
+      <QuestionListManager />
+    </div>
+
+    <div class="divider" />
+
     <!-- Sync Status Display -->
     <div class="mb-6">
       <div class="flex items-center gap-2">
@@ -191,6 +198,7 @@ import { ref, watch, computed } from 'vue';
 
 import { useCloudSync } from '@/app/useCloudSync';
 import { useToast } from '@/app/toast';
+import { QuestionListManager } from '@/features/question-list-manager';
 
 const cloudSync = useCloudSync();
 const toast = useToast();
