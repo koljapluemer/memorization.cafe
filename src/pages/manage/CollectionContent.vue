@@ -36,27 +36,27 @@
     </details>
 
     <!-- Add Learning Items -->
-    <div class="flex gap-2 mb-4">
+    <div class="flex-col md:flex-row flex gap-2 mb-4 flex-wrap">
       <button
-        class="btn btn-sm"
+        class="btn btn-sm text-left flex justify-start"
         @click="$emit('add-item', 'flashcard')"
       >
         + Flashcard
       </button>
       <button
-        class="btn btn-sm"
+        class="btn btn-sm text-left flex justify-start"
         @click="$emit('add-item', 'concept')"
       >
         + Elaborative Interrogation Concept
       </button>
       <button
-        class="btn btn-sm"
+        class="btn btn-sm text-left flex justify-start"
         @click="$emit('add-item', 'list')"
       >
         + List
       </button>
       <button
-        class="btn btn-sm"
+        class="btn btn-sm text-left flex justify-start"
         @click="$emit('add-item', 'cloze')"
       >
         + Cloze
