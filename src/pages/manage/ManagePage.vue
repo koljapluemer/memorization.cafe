@@ -1,139 +1,39 @@
 <template>
   <div>
-    <!-- Tabs -->
-    <div
-      role="tablist"
-      class="tabs tabs-bordered mb-6"
-    >
-      <a
-        v-for="collection in collections"
-        :key="collection.id"
-        role="tab"
-        class="tab"
-        :class="{ 'tab-active': activeCollectionId === collection.id }"
-        @click="activeCollectionId = collection.id!"
-      >
-        {{ collection.name }}
-      </a>
+    <!-- Empty State (no tabs open) -->
+    <EmptyState
+      v-if="openTabIds.length === 0"
+      :has-collections="collections.length > 0"
+      @open-collection="openCollectionModalRef?.open()"
+      @new-collection="openCollectionModal(null, true)"
+    />
 
-      <button
-        class="tab"
-        @click="openCollectionModal(null, true)"
-      >
-        <Plus :size="16" /> New
-      </button>
-    </div>
+    <!-- Tabs and Content (when tabs are open) -->
+    <template v-else>
+      <TabBar
+        :open-tabs="openTabs"
+        :active-tab-id="activeTabId"
+        :has-unopened-collections="unopenedCollections.length > 0"
+        @switch-tab="switchToTab"
+        @close-tab="closeTab"
+        @open-collection="openCollectionModalRef?.open()"
+        @new-collection="openCollectionModal(null, true)"
+      />
 
-    <!-- Active Collection Content -->
-    <div v-if="activeCollection">
-      <!-- Collection Actions (Collapsible) -->
-      <details class="collapse collapse-arrow bg-base-200 mb-4">
-        <summary class="collapse-title font-medium">
-          Collection Actions
-        </summary>
-        <div class="collapse-content space-y-2">
-          <button
-            class="btn btn-sm"
-            @click="openCollectionModal(activeCollection, false)"
-          >
-            <Edit :size="16" /> Edit Collection
-          </button>
-          <button
-            class="btn btn-sm btn-error"
-            @click="handleDeleteCollection"
-          >
-            <Trash2 :size="16" /> Delete Collection
-          </button>
-        </div>
-      </details>
-
-      <!-- Add Learning Items -->
-      <div class="flex gap-2 mb-4">
-        <button
-          class="btn btn-sm"
-          @click="openItemModal('flashcard', null, true)"
-        >
-          + Flashcard
-        </button>
-        <button
-          class="btn btn-sm"
-          @click="openItemModal('concept', null, true)"
-        >
-          + Elaborative Interrogation Concept
-        </button>
-        <button
-          class="btn btn-sm"
-          @click="openItemModal('list', null, true)"
-        >
-          + List
-        </button>
-        <button
-          class="btn btn-sm"
-          @click="openItemModal('cloze', null, true)"
-        >
-          + Cloze
-        </button>
-      </div>
-
-      <!-- Learning Items Table -->
-      <div class="overflow-x-auto">
-        <table class="table w-full">
-          <tbody>
-            <tr
-              v-for="item in allLearningItems"
-              :key="item.id"
-            >
-              <td>
-                <SimpleFlashcardRow
-                  v-if="item.type === 'flashcard'"
-                  :flashcard="item.data"
-                />
-                <ElaborativeInterrogationRow
-                  v-else-if="item.type === 'concept'"
-                  :concept="item.data"
-                />
-                <ListRow
-                  v-else-if="item.type === 'list'"
-                  :list="item.data"
-                />
-                <ClozeRow
-                  v-else-if="item.type === 'cloze'"
-                  :cloze="item.data"
-                />
-              </td>
-              <td class="text-right">
-                <div class="flex gap-2 justify-end">
-                  <button
-                    class="btn btn-ghost btn-sm"
-                    @click="openItemModal(item.type, item.data, false)"
-                  >
-                    <Edit :size="16" />
-                  </button>
-                  <button
-                    class="btn btn-ghost btn-sm"
-                    @click="openMoveItemModal(item.type, item.data)"
-                  >
-                    <FolderInput :size="16" />
-                  </button>
-                  <button
-                    class="btn btn-ghost btn-sm"
-                    @click="item.data.id && handleDeleteItem(item.type, item.data.id)"
-                  >
-                    <Trash2 :size="16" />
-                  </button>
-                  <button
-                    class="btn btn-ghost btn-sm"
-                    @click="openPreviewModal(item.type, item.data)"
-                  >
-                    <Eye :size="16" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <!-- Active Collection Content -->
+      <CollectionContent
+        v-if="activeCollection"
+        :collection="activeCollection"
+        :learning-items="allLearningItems"
+        @edit-collection="openCollectionModal(activeCollection, false)"
+        @delete-collection="handleDeleteCollection"
+        @add-item="(type) => openItemModal(type, null, true)"
+        @edit-item="(type, item) => openItemModal(type, item, false)"
+        @delete-item="handleDeleteItem"
+        @preview-item="openPreviewModal"
+        @move-item="openMoveItemModal"
+      />
+    </template>
 
     <!-- Modals -->
     <CollectionEditModal
@@ -164,28 +64,40 @@
       @move="handleMoveToCollection"
       @create-and-move="handleCreateAndMoveToCollection"
     />
+
+    <OpenCollectionModal
+      ref="openCollectionModalRef"
+      :collections="collections"
+      :open-tab-ids="openTabIds"
+      @select="openTab"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { Plus, Edit, Trash2, Eye, FolderInput } from 'lucide-vue-next';
+import { ref, computed, onMounted, watch } from 'vue';
 
+import EmptyState from './EmptyState.vue';
+import TabBar from './TabBar.vue';
+import CollectionContent from './CollectionContent.vue';
 import CollectionEditModal from './CollectionEditModal.vue';
 import LearningItemEditModal from './LearningItemEditModal.vue';
 import PreviewModal from './PreviewModal.vue';
 import MoveItemModal from './MoveItemModal.vue';
+import OpenCollectionModal from './OpenCollectionModal.vue';
+import { loadOpenTabs, saveOpenTabs } from './tab-storage';
 
 import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
 import { collectionRepo, type Collection } from '@/entities/collection';
-import { elaborativeInterrogationRepo, ElaborativeInterrogationRow } from '@/entities/elaborative-interrogation';
-import { simpleFlashcardRepo, SimpleFlashcardRow } from '@/entities/simple-flashcard';
-import { listRepo, ListRow } from '@/entities/list';
-import { clozeRepo, ClozeRow } from '@/entities/cloze';
+import { elaborativeInterrogationRepo } from '@/entities/elaborative-interrogation';
+import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
+import { listRepo } from '@/entities/list';
+import { clozeRepo } from '@/entities/cloze';
 import { useToast } from '@/app/toast';
 
 const collections = ref<Collection[]>([]);
-const activeCollectionId = ref<string | null>(null);
+const openTabIds = ref<string[]>([]);
+const activeTabId = ref<string | null>(null);
 
 const flashcards = ref<SimpleFlashcard[]>([]);
 const concepts = ref<ElaborativeInterrogationConcept[]>([]);
@@ -196,6 +108,7 @@ const collectionModalRef = ref<InstanceType<typeof CollectionEditModal> | null>(
 const itemModalRef = ref<InstanceType<typeof LearningItemEditModal> | null>(null);
 const previewModalRef = ref<InstanceType<typeof PreviewModal> | null>(null);
 const moveItemModalRef = ref<InstanceType<typeof MoveItemModal> | null>(null);
+const openCollectionModalRef = ref<InstanceType<typeof OpenCollectionModal> | null>(null);
 
 const editingCollection = ref<Collection | undefined>(undefined);
 const isNewCollection = ref(false);
@@ -213,28 +126,38 @@ const movingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List 
 const { show: showToast } = useToast();
 
 const activeCollection = computed(() =>
-  collections.value.find(c => c.id === activeCollectionId.value)
+  collections.value.find(c => c.id === activeTabId.value)
 );
 
+const openTabs = computed(() => {
+  return openTabIds.value
+    .map(id => collections.value.find(c => c.id === id))
+    .filter((c): c is Collection => c !== undefined);
+});
+
+const unopenedCollections = computed(() => {
+  return collections.value.filter(c => !openTabIds.value.includes(c.id!));
+});
+
 const otherCollections = computed(() =>
-  collections.value.filter(c => c.id !== activeCollectionId.value)
+  collections.value.filter(c => c.id !== activeTabId.value)
 );
 
 const allLearningItems = computed(() => {
-  if (!activeCollectionId.value) return [];
+  if (!activeTabId.value) return [];
 
   const items = [
     ...flashcards.value
-      .filter(f => f.collectionId === activeCollectionId.value)
+      .filter(f => f.collectionId === activeTabId.value)
       .map(f => ({ type: 'flashcard' as const, data: f, id: f.id })),
     ...concepts.value
-      .filter(c => c.collectionId === activeCollectionId.value)
+      .filter(c => c.collectionId === activeTabId.value)
       .map(c => ({ type: 'concept' as const, data: c, id: c.id })),
     ...lists.value
-      .filter(l => l.collectionId === activeCollectionId.value)
+      .filter(l => l.collectionId === activeTabId.value)
       .map(l => ({ type: 'list' as const, data: l, id: l.id })),
     ...clozes.value
-      .filter(c => c.collectionId === activeCollectionId.value)
+      .filter(c => c.collectionId === activeTabId.value)
       .map(c => ({ type: 'cloze' as const, data: c, id: c.id })),
   ];
 
@@ -244,23 +167,77 @@ const allLearningItems = computed(() => {
 onMounted(async () => {
   await loadCollections();
   await loadLearningItems();
+  initializeTabs();
 });
+
+function initializeTabs() {
+  // Load open tabs from localStorage
+  const savedTabIds = loadOpenTabs();
+
+  // Filter out tabs for collections that no longer exist
+  const validTabIds = savedTabIds.filter(id =>
+    collections.value.some(c => c.id === id)
+  );
+
+  // If we have valid saved tabs, restore them
+  if (validTabIds.length > 0) {
+    openTabIds.value = validTabIds;
+    activeTabId.value = validTabIds[0]!;
+  } else if (collections.value.length > 0) {
+    // No saved tabs but collections exist - open first collection
+    const firstCollection = collections.value[0];
+    if (firstCollection?.id) {
+      openTabIds.value = [firstCollection.id];
+      activeTabId.value = firstCollection.id;
+      saveOpenTabs(openTabIds.value);
+    }
+  }
+  // If no collections exist, stay in empty state (no tabs open)
+}
 
 async function loadCollections() {
   collections.value = await collectionRepo.getAll();
-  if (collections.value.length > 0 && !activeCollectionId.value) {
-    const firstCollection = collections.value[0];
-    if (firstCollection?.id) {
-      activeCollectionId.value = firstCollection.id;
-    }
-  }
 }
+
+// Watch openTabIds and save to localStorage whenever it changes
+watch(openTabIds, (newTabIds) => {
+  saveOpenTabs(newTabIds);
+}, { deep: true });
 
 async function loadLearningItems() {
   flashcards.value = await simpleFlashcardRepo.getAll();
   concepts.value = await elaborativeInterrogationRepo.getAll();
   lists.value = await listRepo.getAll();
   clozes.value = await clozeRepo.getAll();
+}
+
+// Tab management functions
+function openTab(collectionId: string) {
+  if (!openTabIds.value.includes(collectionId)) {
+    openTabIds.value.push(collectionId);
+  }
+  activeTabId.value = collectionId;
+}
+
+function closeTab(collectionId: string) {
+  const index = openTabIds.value.indexOf(collectionId);
+  if (index === -1) return;
+
+  openTabIds.value.splice(index, 1);
+
+  // If we closed the active tab, switch to another
+  if (activeTabId.value === collectionId) {
+    if (openTabIds.value.length > 0) {
+      // Switch to adjacent tab (prefer next, fallback to previous)
+      activeTabId.value = openTabIds.value[index] || openTabIds.value[index - 1] || null;
+    } else {
+      activeTabId.value = null;
+    }
+  }
+}
+
+function switchToTab(collectionId: string) {
+  activeTabId.value = collectionId;
 }
 
 function openCollectionModal(collection: Collection | null, isNew: boolean) {
@@ -272,15 +249,19 @@ function openCollectionModal(collection: Collection | null, isNew: boolean) {
 async function handleSaveCollection(data: { name: string; description?: string }) {
   if (isNewCollection.value) {
     const id = await collectionRepo.create(data);
-    activeCollectionId.value = id;
+    await loadCollections();
+    // Auto-open newly created collection as a tab
+    openTab(id);
   } else if (editingCollection.value?.id) {
     await collectionRepo.update(editingCollection.value.id, data);
+    await loadCollections();
   }
-  await loadCollections();
 }
 
 async function handleDeleteCollection() {
   if (!activeCollection.value?.id) return;
+
+  const collectionIdToDelete = activeCollection.value.id;
 
   const confirmed = confirm(
     `Delete collection "${activeCollection.value.name}"? This will also delete all learning items in this collection.`
@@ -305,9 +286,12 @@ async function handleDeleteCollection() {
   }
 
   // Delete collection
-  await collectionRepo.delete(activeCollection.value.id);
+  await collectionRepo.delete(collectionIdToDelete);
 
-  // Reset active collection
+  // Close the tab for this collection
+  closeTab(collectionIdToDelete);
+
+  // Reload data
   await loadCollections();
   await loadLearningItems();
 }
@@ -320,14 +304,14 @@ function openItemModal(type: 'flashcard' | 'concept' | 'list' | 'cloze', item: S
 }
 
 async function handleSaveItem(data: unknown) {
-  if (!activeCollectionId.value) return;
+  if (!activeTabId.value) return;
 
   // Convert reactive Proxy to plain object for Dexie
   const plainData = JSON.parse(JSON.stringify(data));
 
   const itemData = {
     ...plainData,
-    collectionId: activeCollectionId.value,
+    collectionId: activeTabId.value,
   };
 
   if (isNewItem.value) {
