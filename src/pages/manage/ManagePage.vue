@@ -101,6 +101,12 @@
                   </button>
                   <button
                     class="btn btn-ghost btn-sm"
+                    @click="openMoveItemModal(item.type, item.data)"
+                  >
+                    <FolderInput :size="16" />
+                  </button>
+                  <button
+                    class="btn btn-ghost btn-sm"
                     @click="item.data.id && handleDeleteItem(item.type, item.data.id)"
                   >
                     <Trash2 :size="16" />
@@ -141,22 +147,31 @@
       :item-type="previewItemType"
       :item="previewItem"
     />
+
+    <MoveItemModal
+      ref="moveItemModalRef"
+      :existing-collections="otherCollections"
+      @move="handleMoveToCollection"
+      @create-and-move="handleCreateAndMoveToCollection"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Plus, Edit, Trash2, Eye } from 'lucide-vue-next';
+import { Plus, Edit, Trash2, Eye, FolderInput } from 'lucide-vue-next';
 
 import CollectionEditModal from './CollectionEditModal.vue';
 import LearningItemEditModal from './LearningItemEditModal.vue';
 import PreviewModal from './PreviewModal.vue';
+import MoveItemModal from './MoveItemModal.vue';
 
 import type { SimpleFlashcard, ElaborativeInterrogationConcept, List } from '@/app/database';
 import { collectionRepo, type Collection } from '@/entities/collection';
 import { elaborativeInterrogationRepo, ElaborativeInterrogationRow } from '@/entities/elaborative-interrogation';
 import { simpleFlashcardRepo, SimpleFlashcardRow } from '@/entities/simple-flashcard';
 import { listRepo, ListRow } from '@/entities/list';
+import { useToast } from '@/app/toast';
 
 const collections = ref<Collection[]>([]);
 const activeCollectionId = ref<string | null>(null);
@@ -168,6 +183,7 @@ const lists = ref<List[]>([]);
 const collectionModalRef = ref<InstanceType<typeof CollectionEditModal> | null>(null);
 const itemModalRef = ref<InstanceType<typeof LearningItemEditModal> | null>(null);
 const previewModalRef = ref<InstanceType<typeof PreviewModal> | null>(null);
+const moveItemModalRef = ref<InstanceType<typeof MoveItemModal> | null>(null);
 
 const editingCollection = ref<Collection | undefined>(undefined);
 const isNewCollection = ref(false);
@@ -179,8 +195,17 @@ const isNewItem = ref(false);
 const previewItemType = ref<'flashcard' | 'concept' | 'list'>('flashcard');
 const previewItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | null>(null);
 
+const movingItemType = ref<'flashcard' | 'concept' | 'list'>('flashcard');
+const movingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | null>(null);
+
+const { show: showToast } = useToast();
+
 const activeCollection = computed(() =>
   collections.value.find(c => c.id === activeCollectionId.value)
+);
+
+const otherCollections = computed(() =>
+  collections.value.filter(c => c.id !== activeCollectionId.value)
 );
 
 const allLearningItems = computed(() => {
@@ -330,6 +355,63 @@ function openPreviewModal(type: 'flashcard' | 'concept' | 'list', item: SimpleFl
   previewItemType.value = type;
   previewItem.value = item;
   previewModalRef.value?.open();
+}
+
+function openMoveItemModal(type: 'flashcard' | 'concept' | 'list', item: SimpleFlashcard | ElaborativeInterrogationConcept | List) {
+  movingItemType.value = type;
+  movingItem.value = item;
+  moveItemModalRef.value?.open();
+}
+
+async function handleMoveToCollection(targetCollectionId: string) {
+  if (!movingItem.value?.id) return;
+
+  const itemId = movingItem.value.id;
+  const type = movingItemType.value;
+
+  try {
+    if (type === 'flashcard') {
+      await simpleFlashcardRepo.update(itemId, { collectionId: targetCollectionId });
+    } else if (type === 'concept') {
+      await elaborativeInterrogationRepo.update(itemId, { collectionId: targetCollectionId });
+    } else if (type === 'list') {
+      await listRepo.update(itemId, { collectionId: targetCollectionId });
+    }
+
+    await loadLearningItems();
+
+    const targetCollection = collections.value.find(c => c.id === targetCollectionId);
+    const itemName = getItemName(movingItem.value, type);
+    showToast(`${itemName} was moved to ${targetCollection?.name || 'collection'}`, 'success');
+  } catch (err) {
+    showToast(err instanceof Error ? err.message : 'Failed to move item', 'error');
+  }
+}
+
+async function handleCreateAndMoveToCollection(newCollectionName: string) {
+  if (!movingItem.value?.id) return;
+
+  try {
+    const newCollectionId = await collectionRepo.create({ name: newCollectionName });
+    await loadCollections();
+    await handleMoveToCollection(newCollectionId);
+  } catch (err) {
+    showToast(err instanceof Error ? err.message : 'Failed to create collection and move item', 'error');
+  }
+}
+
+function getItemName(item: SimpleFlashcard | ElaborativeInterrogationConcept | List, type: 'flashcard' | 'concept' | 'list'): string {
+  if (type === 'flashcard') {
+    const flashcard = item as SimpleFlashcard;
+    return flashcard.front.length > 20 ? flashcard.front.substring(0, 20) + '...' : flashcard.front;
+  } else if (type === 'concept') {
+    const concept = item as ElaborativeInterrogationConcept;
+    return concept.name;
+  } else if (type === 'list') {
+    const list = item as List;
+    return list.name;
+  }
+  return 'Item';
 }
 </script>
 

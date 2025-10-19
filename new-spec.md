@@ -100,6 +100,8 @@ For each, add icon-buttons for view, edit, delete, preview
 ## General Instructions
 
 - do not get confused by previously existing files or instructions. We're doing a major change, this document is your source of truth.
+- use JSON stringify if needed to make objects non-reactive before saving to dexie
+- use [toasts](src/app/toast.ts) to write user-understandable warnings, infos and errors (NOT console.). If showing an error, also display the actual shown error.
 
 ### Architecture
 
