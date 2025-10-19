@@ -101,90 +101,181 @@ async function loadNextItem() {
 
   if (activeTypes.length === 0) return;
 
+  // 15% chance to prioritize new items over due items
+  const prioritizeNew = Math.random() < 0.15;
+
   const shuffledTypes = [...activeTypes].sort(() => Math.random() - 0.5);
 
   for (const itemType of shuffledTypes) {
     const now = new Date();
 
     if (itemType === 'flashcard') {
-      // Try to get a due flashcard
-      const dueFlashcard = await simpleFlashcardRepo.getRandomDue(activeCollectionIds, now);
-      if (dueFlashcard) {
-        currentItem.value = dueFlashcard;
-        currentItemType.value = 'flashcard';
-        return;
-      }
+      if (prioritizeNew) {
+        // Try to get a new flashcard first
+        const allProgress = await learningProgressRepo.getAllProgressForItems(
+          (await simpleFlashcardRepo.getAll()).map(f => f.id!)
+        );
+        const existingIds = allProgress.map(p => p.learningItemId);
+        const newFlashcard = await simpleFlashcardRepo.getRandomNew(activeCollectionIds, existingIds);
+        if (newFlashcard) {
+          currentItem.value = newFlashcard;
+          currentItemType.value = 'flashcard';
+          return;
+        }
 
-      // Try to get a new flashcard
-      const allProgress = await learningProgressRepo.getAllProgressForItems(
-        (await simpleFlashcardRepo.getAll()).map(f => f.id!)
-      );
-      const existingIds = allProgress.map(p => p.learningItemId);
-      const newFlashcard = await simpleFlashcardRepo.getRandomNew(activeCollectionIds, existingIds);
-      if (newFlashcard) {
-        currentItem.value = newFlashcard;
-        currentItemType.value = 'flashcard';
-        return;
+        // Fallback to due flashcard
+        const dueFlashcard = await simpleFlashcardRepo.getRandomDue(activeCollectionIds, now);
+        if (dueFlashcard) {
+          currentItem.value = dueFlashcard;
+          currentItemType.value = 'flashcard';
+          return;
+        }
+      } else {
+        // Try to get a due flashcard first
+        const dueFlashcard = await simpleFlashcardRepo.getRandomDue(activeCollectionIds, now);
+        if (dueFlashcard) {
+          currentItem.value = dueFlashcard;
+          currentItemType.value = 'flashcard';
+          return;
+        }
+
+        // Fallback to new flashcard
+        const allProgress = await learningProgressRepo.getAllProgressForItems(
+          (await simpleFlashcardRepo.getAll()).map(f => f.id!)
+        );
+        const existingIds = allProgress.map(p => p.learningItemId);
+        const newFlashcard = await simpleFlashcardRepo.getRandomNew(activeCollectionIds, existingIds);
+        if (newFlashcard) {
+          currentItem.value = newFlashcard;
+          currentItemType.value = 'flashcard';
+          return;
+        }
       }
     } else if (itemType === 'concept') {
-      // Try to get a due concept
-      const dueConcept = await elaborativeInterrogationRepo.getRandomDue(activeCollectionIds, now);
-      if (dueConcept) {
-        currentItem.value = dueConcept;
-        currentItemType.value = 'concept';
-        return;
-      }
+      if (prioritizeNew) {
+        // Try to get a new concept first
+        const allProgress = await learningProgressRepo.getAllProgressForItems(
+          (await elaborativeInterrogationRepo.getAll()).map(c => c.id!)
+        );
+        const existingIds = allProgress.map(p => p.learningItemId);
+        const newConcept = await elaborativeInterrogationRepo.getRandomNew(activeCollectionIds, existingIds);
+        if (newConcept) {
+          currentItem.value = newConcept;
+          currentItemType.value = 'concept';
+          return;
+        }
 
-      // Try to get a new concept
-      const allProgress = await learningProgressRepo.getAllProgressForItems(
-        (await elaborativeInterrogationRepo.getAll()).map(c => c.id!)
-      );
-      const existingIds = allProgress.map(p => p.learningItemId);
-      const newConcept = await elaborativeInterrogationRepo.getRandomNew(activeCollectionIds, existingIds);
-      if (newConcept) {
-        currentItem.value = newConcept;
-        currentItemType.value = 'concept';
-        return;
+        // Fallback to due concept
+        const dueConcept = await elaborativeInterrogationRepo.getRandomDue(activeCollectionIds, now);
+        if (dueConcept) {
+          currentItem.value = dueConcept;
+          currentItemType.value = 'concept';
+          return;
+        }
+      } else {
+        // Try to get a due concept first
+        const dueConcept = await elaborativeInterrogationRepo.getRandomDue(activeCollectionIds, now);
+        if (dueConcept) {
+          currentItem.value = dueConcept;
+          currentItemType.value = 'concept';
+          return;
+        }
+
+        // Fallback to new concept
+        const allProgress = await learningProgressRepo.getAllProgressForItems(
+          (await elaborativeInterrogationRepo.getAll()).map(c => c.id!)
+        );
+        const existingIds = allProgress.map(p => p.learningItemId);
+        const newConcept = await elaborativeInterrogationRepo.getRandomNew(activeCollectionIds, existingIds);
+        if (newConcept) {
+          currentItem.value = newConcept;
+          currentItemType.value = 'concept';
+          return;
+        }
       }
     } else if (itemType === 'list') {
-      // Try to get a due list
-      const dueList = await listRepo.getRandomDue(activeCollectionIds, now);
-      if (dueList) {
-        currentItem.value = dueList;
-        currentItemType.value = 'list';
-        return;
-      }
+      if (prioritizeNew) {
+        // Try to get a new list first
+        const allProgress = await learningProgressRepo.getAllProgressForItems(
+          (await listRepo.getAll()).map(l => l.id!)
+        );
+        const existingIds = allProgress.map(p => p.learningItemId);
+        const newList = await listRepo.getRandomNew(activeCollectionIds, existingIds);
+        if (newList) {
+          currentItem.value = newList;
+          currentItemType.value = 'list';
+          return;
+        }
 
-      // Try to get a new list
-      const allProgress = await learningProgressRepo.getAllProgressForItems(
-        (await listRepo.getAll()).map(l => l.id!)
-      );
-      const existingIds = allProgress.map(p => p.learningItemId);
-      const newList = await listRepo.getRandomNew(activeCollectionIds, existingIds);
-      if (newList) {
-        currentItem.value = newList;
-        currentItemType.value = 'list';
-        return;
+        // Fallback to due list
+        const dueList = await listRepo.getRandomDue(activeCollectionIds, now);
+        if (dueList) {
+          currentItem.value = dueList;
+          currentItemType.value = 'list';
+          return;
+        }
+      } else {
+        // Try to get a due list first
+        const dueList = await listRepo.getRandomDue(activeCollectionIds, now);
+        if (dueList) {
+          currentItem.value = dueList;
+          currentItemType.value = 'list';
+          return;
+        }
+
+        // Fallback to new list
+        const allProgress = await learningProgressRepo.getAllProgressForItems(
+          (await listRepo.getAll()).map(l => l.id!)
+        );
+        const existingIds = allProgress.map(p => p.learningItemId);
+        const newList = await listRepo.getRandomNew(activeCollectionIds, existingIds);
+        if (newList) {
+          currentItem.value = newList;
+          currentItemType.value = 'list';
+          return;
+        }
       }
     } else if (itemType === 'cloze') {
-      // Try to get a due cloze
-      const dueCloze = await clozeRepo.getRandomDue(activeCollectionIds, now);
-      if (dueCloze) {
-        currentItem.value = dueCloze;
-        currentItemType.value = 'cloze';
-        return;
-      }
+      if (prioritizeNew) {
+        // Try to get a new cloze first
+        const allProgress = await learningProgressRepo.getAllProgressForItems(
+          (await clozeRepo.getAll()).map(c => c.id!)
+        );
+        const existingIds = allProgress.map(p => p.learningItemId);
+        const newCloze = await clozeRepo.getRandomNew(activeCollectionIds, existingIds);
+        if (newCloze) {
+          currentItem.value = newCloze;
+          currentItemType.value = 'cloze';
+          return;
+        }
 
-      // Try to get a new cloze
-      const allProgress = await learningProgressRepo.getAllProgressForItems(
-        (await clozeRepo.getAll()).map(c => c.id!)
-      );
-      const existingIds = allProgress.map(p => p.learningItemId);
-      const newCloze = await clozeRepo.getRandomNew(activeCollectionIds, existingIds);
-      if (newCloze) {
-        currentItem.value = newCloze;
-        currentItemType.value = 'cloze';
-        return;
+        // Fallback to due cloze
+        const dueCloze = await clozeRepo.getRandomDue(activeCollectionIds, now);
+        if (dueCloze) {
+          currentItem.value = dueCloze;
+          currentItemType.value = 'cloze';
+          return;
+        }
+      } else {
+        // Try to get a due cloze first
+        const dueCloze = await clozeRepo.getRandomDue(activeCollectionIds, now);
+        if (dueCloze) {
+          currentItem.value = dueCloze;
+          currentItemType.value = 'cloze';
+          return;
+        }
+
+        // Fallback to new cloze
+        const allProgress = await learningProgressRepo.getAllProgressForItems(
+          (await clozeRepo.getAll()).map(c => c.id!)
+        );
+        const existingIds = allProgress.map(p => p.learningItemId);
+        const newCloze = await clozeRepo.getRandomNew(activeCollectionIds, existingIds);
+        if (newCloze) {
+          currentItem.value = newCloze;
+          currentItemType.value = 'cloze';
+          return;
+        }
       }
     }
   }
