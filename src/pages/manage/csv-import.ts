@@ -28,6 +28,7 @@ export async function importFlashcardsFromCsv(
         back: row.back || '',
         practiceAsFlashcard: row.practiceAsFlashcard?.toLowerCase() === 'false' ? false : true,
         practiceAsPrompt: row.practiceAsPrompt?.toLowerCase() === 'true' ? true : false,
+        practiceReverse: row.practiceReverse?.toLowerCase() === 'true' ? true : false,
       };
 
       await simpleFlashcardRepo.create(flashcard);

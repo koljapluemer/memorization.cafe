@@ -17,6 +17,7 @@ export interface SimpleFlashcard {
   back: string;
   practiceAsFlashcard: boolean;
   practiceAsPrompt: boolean;
+  practiceReverse?: boolean;
   isDisabled?: boolean;
   realmId?: string;
 }

@@ -7,6 +7,7 @@ export interface FlashcardCsvRow {
   back: string;
   practiceAsFlashcard: string;
   practiceAsPrompt: string;
+  practiceReverse: string;
 }
 
 export interface ConceptCsvRow {
@@ -35,10 +36,10 @@ export interface ClozeCsvRow {
 export function generateExampleCsv(type: EntityType): string {
   switch (type) {
     case 'flashcard':
-      return `front,back,practiceAsFlashcard,practiceAsPrompt
-"What is the capital of France?","Paris",true,false
-"Translate 'hello' to Spanish","hola",true,true
-"2 + 2 = ?","4",false,true`;
+      return `front,back,practiceAsFlashcard,practiceAsPrompt,practiceReverse
+"What is the capital of France?","Paris",true,false,false
+"Translate 'hello' to Spanish","hola",true,true,true
+"2 + 2 = ?","4",false,true,false`;
 
     case 'concept':
       return `name,description
@@ -131,6 +132,9 @@ export function validateCsvData(type: EntityType, data: Record<string, string>[]
         }
         if (row.practiceAsPrompt && !['true', 'false', ''].includes(row.practiceAsPrompt.toLowerCase())) {
           errors.push(`Row ${index + 2}: 'practiceAsPrompt' must be 'true' or 'false'`);
+        }
+        if (row.practiceReverse && !['true', 'false', ''].includes(row.practiceReverse.toLowerCase())) {
+          errors.push(`Row ${index + 2}: 'practiceReverse' must be 'true' or 'false'`);
         }
       });
       break;

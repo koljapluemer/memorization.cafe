@@ -51,6 +51,14 @@
           >
           <span class="label-text">Practice as prompt (type response)</span>
         </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input
+            v-model="localPracticeReverse"
+            type="checkbox"
+            class="checkbox"
+          >
+          <span class="label-text">Practice in reverse (randomly show back→front)</span>
+        </label>
       </div>
       <label
         v-if="validationError"
@@ -83,13 +91,14 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  update: [data: { front: string; back: string; practiceAsFlashcard: boolean; practiceAsPrompt: boolean; isDisabled: boolean }];
+  update: [data: { front: string; back: string; practiceAsFlashcard: boolean; practiceAsPrompt: boolean; practiceReverse: boolean; isDisabled: boolean }];
 }>();
 
 const localFront = ref(props.flashcard?.front || '');
 const localBack = ref(props.flashcard?.back || '');
 const localPracticeAsFlashcard = ref(props.flashcard?.practiceAsFlashcard ?? true);
 const localPracticeAsPrompt = ref(props.flashcard?.practiceAsPrompt ?? false);
+const localPracticeReverse = ref(props.flashcard?.practiceReverse ?? false);
 const localIsDisabled = ref(props.flashcard?.isDisabled ?? false);
 
 const validationError = computed(() => {
@@ -99,12 +108,13 @@ const validationError = computed(() => {
   return '';
 });
 
-watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, localIsDisabled], () => {
+watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, localPracticeReverse, localIsDisabled], () => {
   emit('update', {
     front: localFront.value,
     back: localBack.value,
     practiceAsFlashcard: localPracticeAsFlashcard.value,
     practiceAsPrompt: localPracticeAsPrompt.value,
+    practiceReverse: localPracticeReverse.value,
     isDisabled: localIsDisabled.value,
   });
 });

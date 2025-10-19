@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <MarkdownText :text="flashcard.front" />
+    <MarkdownText :text="currentQuestion" />
 
     <div
       v-if="!revealed && practiceMode === 'flashcard'"
@@ -52,7 +52,7 @@
           <h4 class="font-semibold mb-2 text-sm">
             Your Answer / Correct Answer
           </h4>
-          <MarkdownText :text="flashcard.back" />
+          <MarkdownText :text="currentAnswer" />
         </div>
         <div
           v-else
@@ -70,14 +70,14 @@
             <h4 class="font-semibold mb-2 text-sm">
               Correct Answer
             </h4>
-            <MarkdownText :text="flashcard.back" />
+            <MarkdownText :text="currentAnswer" />
           </div>
         </div>
       </div>
 
       <MarkdownText
         v-else
-        :text="flashcard.back"
+        :text="currentAnswer"
       />
 
       <div class="flex gap-2 justify-center mt-4">
@@ -138,12 +138,21 @@ const emit = defineEmits<{
 const revealed = ref(false);
 const userResponse = ref('');
 const practiceMode = ref<'flashcard' | 'prompt'>('flashcard');
+const isReversed = ref(false);
 const f = fsrs();
+
+const currentQuestion = computed(() =>
+  isReversed.value ? props.flashcard.back : props.flashcard.front
+);
+
+const currentAnswer = computed(() =>
+  isReversed.value ? props.flashcard.front : props.flashcard.back
+);
 
 const answersMatch = computed(() => {
   // Normalize both answers for comparison: trim whitespace and convert to lowercase
   const userAnswer = userResponse.value.trim().toLowerCase();
-  const correctAnswer = props.flashcard.back.trim().toLowerCase();
+  const correctAnswer = currentAnswer.value.trim().toLowerCase();
   return userAnswer === correctAnswer;
 });
 
@@ -156,6 +165,7 @@ onMounted(async () => {
   const progress = await learningProgressRepo.getByLearningItemId(props.flashcard.id!);
   const isNew = !progress || !progress.cardData;
 
+  // Determine practice mode
   if (practiceAsFlashcard && practiceAsPrompt) {
     // Both modes enabled
     if (isNew) {
@@ -169,6 +179,17 @@ onMounted(async () => {
     practiceMode.value = 'prompt';
   } else {
     practiceMode.value = 'flashcard';
+  }
+
+  // Determine direction (front→back or back→front)
+  if (props.flashcard.practiceReverse) {
+    if (isNew) {
+      isReversed.value = false; // New cards always front→back
+    } else {
+      isReversed.value = Math.random() < 0.5; // 50/50 for reviewed cards
+    }
+  } else {
+    isReversed.value = false; // Always front→back when reverse not enabled
   }
 });
 
