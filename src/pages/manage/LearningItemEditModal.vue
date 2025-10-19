@@ -26,6 +26,12 @@
         @update="handleUpdate"
       />
 
+      <ClozeEdit
+        v-else-if="itemType === 'cloze'"
+        :cloze="(item as Cloze | undefined)"
+        @update="handleUpdate"
+      />
+
       <div class="modal-action">
         <button
           class="btn btn-primary"
@@ -47,14 +53,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List } from '@/app/database';
+import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
 import { ElaborativeInterrogationEdit } from '@/entities/elaborative-interrogation';
 import { SimpleFlashcardEdit } from '@/entities/simple-flashcard';
 import { ListEdit } from '@/entities/list';
+import { ClozeEdit } from '@/entities/cloze';
 
 const props = defineProps<{
-  itemType: 'flashcard' | 'concept' | 'list';
-  item?: SimpleFlashcard | ElaborativeInterrogationConcept | List;
+  itemType: 'flashcard' | 'concept' | 'list' | 'cloze';
+  item?: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze;
   isNew?: boolean;
 }>();
 
@@ -70,10 +77,12 @@ const title = computed(() => {
     if (props.itemType === 'flashcard') return 'New Flashcard';
     if (props.itemType === 'concept') return 'New Concept';
     if (props.itemType === 'list') return 'New List';
+    if (props.itemType === 'cloze') return 'New Cloze';
   }
   if (props.itemType === 'flashcard') return 'Edit Flashcard';
   if (props.itemType === 'concept') return 'Edit Concept';
   if (props.itemType === 'list') return 'Edit List';
+  if (props.itemType === 'cloze') return 'Edit Cloze';
   return '';
 });
 

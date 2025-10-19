@@ -67,6 +67,12 @@
         >
           + List
         </button>
+        <button
+          class="btn btn-sm"
+          @click="openItemModal('cloze', null, true)"
+        >
+          + Cloze
+        </button>
       </div>
 
       <!-- Learning Items Table -->
@@ -89,6 +95,10 @@
                 <ListRow
                   v-else-if="item.type === 'list'"
                   :list="item.data"
+                />
+                <ClozeRow
+                  v-else-if="item.type === 'cloze'"
+                  :cloze="item.data"
                 />
               </td>
               <td class="text-right">
@@ -166,11 +176,12 @@ import LearningItemEditModal from './LearningItemEditModal.vue';
 import PreviewModal from './PreviewModal.vue';
 import MoveItemModal from './MoveItemModal.vue';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List } from '@/app/database';
+import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
 import { collectionRepo, type Collection } from '@/entities/collection';
 import { elaborativeInterrogationRepo, ElaborativeInterrogationRow } from '@/entities/elaborative-interrogation';
 import { simpleFlashcardRepo, SimpleFlashcardRow } from '@/entities/simple-flashcard';
 import { listRepo, ListRow } from '@/entities/list';
+import { clozeRepo, ClozeRow } from '@/entities/cloze';
 import { useToast } from '@/app/toast';
 
 const collections = ref<Collection[]>([]);
@@ -179,6 +190,7 @@ const activeCollectionId = ref<string | null>(null);
 const flashcards = ref<SimpleFlashcard[]>([]);
 const concepts = ref<ElaborativeInterrogationConcept[]>([]);
 const lists = ref<List[]>([]);
+const clozes = ref<Cloze[]>([]);
 
 const collectionModalRef = ref<InstanceType<typeof CollectionEditModal> | null>(null);
 const itemModalRef = ref<InstanceType<typeof LearningItemEditModal> | null>(null);
@@ -188,15 +200,15 @@ const moveItemModalRef = ref<InstanceType<typeof MoveItemModal> | null>(null);
 const editingCollection = ref<Collection | undefined>(undefined);
 const isNewCollection = ref(false);
 
-const editingItemType = ref<'flashcard' | 'concept' | 'list'>('flashcard');
-const editingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | undefined>(undefined);
+const editingItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze'>('flashcard');
+const editingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze | undefined>(undefined);
 const isNewItem = ref(false);
 
-const previewItemType = ref<'flashcard' | 'concept' | 'list'>('flashcard');
-const previewItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | null>(null);
+const previewItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze'>('flashcard');
+const previewItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze | null>(null);
 
-const movingItemType = ref<'flashcard' | 'concept' | 'list'>('flashcard');
-const movingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | null>(null);
+const movingItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze'>('flashcard');
+const movingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze | null>(null);
 
 const { show: showToast } = useToast();
 
@@ -221,6 +233,9 @@ const allLearningItems = computed(() => {
     ...lists.value
       .filter(l => l.collectionId === activeCollectionId.value)
       .map(l => ({ type: 'list' as const, data: l, id: l.id })),
+    ...clozes.value
+      .filter(c => c.collectionId === activeCollectionId.value)
+      .map(c => ({ type: 'cloze' as const, data: c, id: c.id })),
   ];
 
   return items;
@@ -245,6 +260,7 @@ async function loadLearningItems() {
   flashcards.value = await simpleFlashcardRepo.getAll();
   concepts.value = await elaborativeInterrogationRepo.getAll();
   lists.value = await listRepo.getAll();
+  clozes.value = await clozeRepo.getAll();
 }
 
 function openCollectionModal(collection: Collection | null, isNew: boolean) {
@@ -282,6 +298,8 @@ async function handleDeleteCollection() {
         await elaborativeInterrogationRepo.delete(item.data.id);
       } else if (item.type === 'list') {
         await listRepo.delete(item.data.id);
+      } else if (item.type === 'cloze') {
+        await clozeRepo.delete(item.data.id);
       }
     }
   }
@@ -294,7 +312,7 @@ async function handleDeleteCollection() {
   await loadLearningItems();
 }
 
-function openItemModal(type: 'flashcard' | 'concept' | 'list', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | null, isNew: boolean) {
+function openItemModal(type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze | null, isNew: boolean) {
   editingItemType.value = type;
   editingItem.value = item || undefined;
   isNewItem.value = isNew;
@@ -319,6 +337,8 @@ async function handleSaveItem(data: unknown) {
       await elaborativeInterrogationRepo.create(itemData as Omit<ElaborativeInterrogationConcept, 'id'>);
     } else if (editingItemType.value === 'list') {
       await listRepo.create(itemData as Omit<List, 'id'>);
+    } else if (editingItemType.value === 'cloze') {
+      await clozeRepo.create(itemData as Omit<Cloze, 'id'>);
     }
   } else {
     const id = (editingItem.value as { id?: string })?.id;
@@ -329,6 +349,8 @@ async function handleSaveItem(data: unknown) {
         await elaborativeInterrogationRepo.update(id, plainData as Partial<ElaborativeInterrogationConcept>);
       } else if (editingItemType.value === 'list') {
         await listRepo.update(id, plainData as Partial<List>);
+      } else if (editingItemType.value === 'cloze') {
+        await clozeRepo.update(id, plainData as Partial<Cloze>);
       }
     }
   }
@@ -336,7 +358,7 @@ async function handleSaveItem(data: unknown) {
   await loadLearningItems();
 }
 
-async function handleDeleteItem(type: 'flashcard' | 'concept' | 'list', id: string) {
+async function handleDeleteItem(type: 'flashcard' | 'concept' | 'list' | 'cloze', id: string) {
   const confirmed = confirm('Delete this learning item?');
   if (!confirmed) return;
 
@@ -346,18 +368,20 @@ async function handleDeleteItem(type: 'flashcard' | 'concept' | 'list', id: stri
     await elaborativeInterrogationRepo.delete(id);
   } else if (type === 'list') {
     await listRepo.delete(id);
+  } else if (type === 'cloze') {
+    await clozeRepo.delete(id);
   }
 
   await loadLearningItems();
 }
 
-function openPreviewModal(type: 'flashcard' | 'concept' | 'list', item: SimpleFlashcard | ElaborativeInterrogationConcept | List) {
+function openPreviewModal(type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze) {
   previewItemType.value = type;
   previewItem.value = item;
   previewModalRef.value?.open();
 }
 
-function openMoveItemModal(type: 'flashcard' | 'concept' | 'list', item: SimpleFlashcard | ElaborativeInterrogationConcept | List) {
+function openMoveItemModal(type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze) {
   movingItemType.value = type;
   movingItem.value = item;
   moveItemModalRef.value?.open();
@@ -376,6 +400,8 @@ async function handleMoveToCollection(targetCollectionId: string) {
       await elaborativeInterrogationRepo.update(itemId, { collectionId: targetCollectionId });
     } else if (type === 'list') {
       await listRepo.update(itemId, { collectionId: targetCollectionId });
+    } else if (type === 'cloze') {
+      await clozeRepo.update(itemId, { collectionId: targetCollectionId });
     }
 
     await loadLearningItems();
@@ -400,7 +426,7 @@ async function handleCreateAndMoveToCollection(newCollectionName: string) {
   }
 }
 
-function getItemName(item: SimpleFlashcard | ElaborativeInterrogationConcept | List, type: 'flashcard' | 'concept' | 'list'): string {
+function getItemName(item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze, type: 'flashcard' | 'concept' | 'list' | 'cloze'): string {
   if (type === 'flashcard') {
     const flashcard = item as SimpleFlashcard;
     return flashcard.front.length > 20 ? flashcard.front.substring(0, 20) + '...' : flashcard.front;
@@ -410,6 +436,9 @@ function getItemName(item: SimpleFlashcard | ElaborativeInterrogationConcept | L
   } else if (type === 'list') {
     const list = item as List;
     return list.name;
+  } else if (type === 'cloze') {
+    const cloze = item as Cloze;
+    return cloze.content.length > 20 ? cloze.content.substring(0, 20) + '...' : cloze.content;
   }
   return 'Item';
 }

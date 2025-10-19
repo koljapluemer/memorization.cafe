@@ -92,6 +92,15 @@
               >
               <span>Lists</span>
             </label>
+            <label class="flex items-center gap-2">
+              <input
+                v-model="localSelectedItemTypes"
+                type="checkbox"
+                class="checkbox checkbox-sm"
+                value="cloze"
+              >
+              <span>Clozes</span>
+            </label>
           </div>
         </div>
       </div>
@@ -140,7 +149,7 @@ const emit = defineEmits<{
 
 const modalRef = ref<HTMLDialogElement | null>(null);
 const localSelectedCollectionIds = ref<string[]>([]);
-const localSelectedItemTypes = ref<('flashcard' | 'concept' | 'list')[]>([]);
+const localSelectedItemTypes = ref<('flashcard' | 'concept' | 'list' | 'cloze')[]>([]);
 
 onMounted(() => {
   localSelectedCollectionIds.value = [...props.currentFilters.selectedCollectionIds];
@@ -164,7 +173,7 @@ function deselectAllCollections() {
 }
 
 function selectAllTypes() {
-  localSelectedItemTypes.value = ['flashcard', 'concept', 'list'];
+  localSelectedItemTypes.value = ['flashcard', 'concept', 'list', 'cloze'];
 }
 
 function deselectAllTypes() {

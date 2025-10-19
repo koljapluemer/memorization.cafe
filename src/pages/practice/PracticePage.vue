@@ -16,6 +16,11 @@
         :list="currentItem as List"
         @complete="loadNextItem"
       />
+      <ClozePractice
+        v-else-if="currentItemType === 'cloze'"
+        :cloze="currentItem as Cloze"
+        @complete="loadNextItem"
+      />
     </div>
 
     <div
@@ -55,20 +60,21 @@ import { Filter } from 'lucide-vue-next';
 import FilterModal from './FilterModal.vue';
 import { loadFilters, saveFilters, type PracticeFilters } from './filter-storage';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List } from '@/app/database';
+import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
 import { collectionRepo, type Collection } from '@/entities/collection';
 import { elaborativeInterrogationRepo, ElaborativeInterrogationPractice } from '@/entities/elaborative-interrogation';
 import { learningProgressRepo } from '@/entities/learning-progress';
 import { simpleFlashcardRepo, SimpleFlashcardPractice } from '@/entities/simple-flashcard';
 import { listRepo, ListPractice } from '@/entities/list';
+import { clozeRepo, ClozePractice } from '@/entities/cloze';
 
 
 const collections = ref<Collection[]>([]);
 const filters = ref<PracticeFilters>(loadFilters());
 const filterModalRef = ref<InstanceType<typeof FilterModal> | null>(null);
 
-const currentItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | null>(null);
-const currentItemType = ref<'flashcard' | 'concept' | 'list' | null>(null);
+const currentItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze | null>(null);
+const currentItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze' | null>(null);
 
 onMounted(async () => {
   collections.value = await collectionRepo.getAll();
@@ -156,6 +162,26 @@ async function loadNextItem() {
       if (newList) {
         currentItem.value = newList;
         currentItemType.value = 'list';
+        return;
+      }
+    } else if (itemType === 'cloze') {
+      // Try to get a due cloze
+      const dueCloze = await clozeRepo.getRandomDue(activeCollectionIds, now);
+      if (dueCloze) {
+        currentItem.value = dueCloze;
+        currentItemType.value = 'cloze';
+        return;
+      }
+
+      // Try to get a new cloze
+      const allProgress = await learningProgressRepo.getAllProgressForItems(
+        (await clozeRepo.getAll()).map(c => c.id!)
+      );
+      const existingIds = allProgress.map(p => p.learningItemId);
+      const newCloze = await clozeRepo.getRandomNew(activeCollectionIds, existingIds);
+      if (newCloze) {
+        currentItem.value = newCloze;
+        currentItemType.value = 'cloze';
         return;
       }
     }

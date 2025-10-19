@@ -36,10 +36,23 @@ export interface List {
   realmId?: string;
 }
 
+export type ClozeStrategy = 'atSpace' | 'atEveryCharacter' | 'split';
+
+export interface Cloze {
+  id?: string;
+  collectionId: string;
+  preExercise?: string;
+  postExercise?: string;
+  content: string;
+  clozeStrategy: ClozeStrategy;
+  indices: number[];
+  realmId?: string;
+}
+
 export interface LearningProgress {
   id?: string;
-  learningItemId: string; // References flashcard, concept, or list
-  itemType: 'flashcard' | 'concept' | 'list';
+  learningItemId: string; // References flashcard, concept, list, or cloze
+  itemType: 'flashcard' | 'concept' | 'list' | 'cloze';
   owner?: string; // Current user ID (keeps progress private)
   realmId?: string; // User's private realm
 
@@ -65,6 +78,7 @@ export class MemorizationDatabase extends Dexie {
   flashcards!: Dexie.Table<SimpleFlashcard, string>;
   concepts!: Dexie.Table<ElaborativeInterrogationConcept, string>;
   lists!: Dexie.Table<List, string>;
+  clozes!: Dexie.Table<Cloze, string>;
   learningProgress!: Dexie.Table<LearningProgress, string>;
 
   constructor() {
@@ -82,6 +96,15 @@ export class MemorizationDatabase extends Dexie {
       flashcards: '@id, collectionId',
       concepts: '@id, collectionId, name',
       lists: '@id, collectionId, name',
+      learningProgress: '@id, learningItemId, itemType, owner',
+    });
+
+    this.version(3).stores({
+      collections: '@id, name',
+      flashcards: '@id, collectionId',
+      concepts: '@id, collectionId, name',
+      lists: '@id, collectionId, name',
+      clozes: '@id, collectionId',
       learningProgress: '@id, learningItemId, itemType, owner',
     });
 

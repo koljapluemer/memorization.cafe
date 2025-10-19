@@ -23,6 +23,11 @@
         :list="(item as List)"
       />
 
+      <ClozePreview
+        v-else-if="itemType === 'cloze'"
+        :cloze="(item as Cloze)"
+      />
+
       <div class="modal-action">
         <button
           class="btn"
@@ -38,14 +43,15 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List } from '@/app/database';
+import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
 import { ElaborativeInterrogationPreview } from '@/entities/elaborative-interrogation';
 import { SimpleFlashcardPreview } from '@/entities/simple-flashcard';
 import { ListPreview } from '@/entities/list';
+import { ClozePreview } from '@/entities/cloze';
 
 defineProps<{
-  itemType: 'flashcard' | 'concept' | 'list';
-  item: SimpleFlashcard | ElaborativeInterrogationConcept | List;
+  itemType: 'flashcard' | 'concept' | 'list' | 'cloze';
+  item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze;
 }>();
 
 const modalRef = ref<HTMLDialogElement | null>(null);
