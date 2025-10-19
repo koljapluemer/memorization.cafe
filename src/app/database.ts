@@ -15,6 +15,8 @@ export interface SimpleFlashcard {
   collectionId: string;
   front: string;
   back: string;
+  practiceAsFlashcard: boolean;
+  practiceAsPrompt: boolean;
   realmId?: string;
 }
 
