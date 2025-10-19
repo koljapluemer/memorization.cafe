@@ -84,6 +84,16 @@ export class MemorizationDatabase extends Dexie {
       lists: '@id, collectionId, name',
       learningProgress: '@id, learningItemId, itemType, owner',
     });
+
+    // Configure Dexie Cloud
+    const cloudUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
+    if (cloudUrl) {
+      this.cloud.configure({
+        databaseUrl: cloudUrl,
+        requireAuth: false, // Allow local-only usage
+        customLoginGui: true, // Use our custom UI instead of default popup
+      });
+    }
   }
 }
 
