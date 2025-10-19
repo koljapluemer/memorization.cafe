@@ -64,7 +64,7 @@ import { ref } from 'vue';
 
 import type { Collection } from '@/entities/collection';
 
-const props = defineProps<{
+defineProps<{
   collection?: Collection;
   isNew?: boolean;
 }>();
