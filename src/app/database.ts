@@ -32,6 +32,7 @@ export interface List {
   name: string;
   items: string[];
   isOrderedList: boolean;
+  note?: string;
   realmId?: string;
 }
 

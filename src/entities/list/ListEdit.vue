@@ -29,6 +29,21 @@
     </div>
 
     <div class="form-control w-full">
+      <label
+        for="note"
+        class="label"
+      >
+        <span class="label-text">Note (optional)</span>
+      </label>
+      <textarea
+        id="note"
+        v-model="localNote"
+        placeholder="Additional notes (markdown supported)"
+        class="textarea textarea-bordered w-full h-24"
+      />
+    </div>
+
+    <div class="form-control w-full">
       <label class="label">
         <span class="label-text">Items</span>
       </label>
@@ -95,12 +110,13 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  update: [data: { name: string; items: string[]; isOrderedList: boolean }];
+  update: [data: { name: string; items: string[]; isOrderedList: boolean; note?: string }];
 }>();
 
 const localName = ref(props.list?.name || '');
 const localItems = ref<string[]>([...(props.list?.items || []), '']);
 const localIsOrderedList = ref(props.list?.isOrderedList ?? false);
+const localNote = ref(props.list?.note || '');
 
 function handleItemChange() {
   // Always ensure there's one empty item at the end
@@ -150,10 +166,11 @@ function emitUpdate() {
     name: localName.value,
     items: nonEmptyItems,
     isOrderedList: localIsOrderedList.value,
+    note: localNote.value || undefined,
   });
 }
 
-watch([localName, localIsOrderedList], () => {
+watch([localName, localIsOrderedList, localNote], () => {
   emitUpdate();
 });
 </script>

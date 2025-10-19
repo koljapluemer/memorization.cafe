@@ -70,7 +70,17 @@
         </table>
       </div>
 
-      <div class="flex justify-center">
+      <div
+        v-if="list.note"
+        class="card bg-base-200 p-3 mt-4"
+      >
+        <div class="text-xs opacity-70 mb-1">
+          Note
+        </div>
+        <MarkdownText :text="list.note" />
+      </div>
+
+      <div class="flex justify-center mt-4">
         <button
           class="btn btn-primary"
           @click="handleComplete"

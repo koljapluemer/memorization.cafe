@@ -279,8 +279,11 @@ function openItemModal(type: 'flashcard' | 'concept' | 'list', item: SimpleFlash
 async function handleSaveItem(data: unknown) {
   if (!activeCollectionId.value) return;
 
+  // Convert reactive Proxy to plain object for Dexie
+  const plainData = JSON.parse(JSON.stringify(data));
+
   const itemData = {
-    ...(data as Record<string, unknown>),
+    ...plainData,
     collectionId: activeCollectionId.value,
   };
 
@@ -296,11 +299,11 @@ async function handleSaveItem(data: unknown) {
     const id = (editingItem.value as { id?: string })?.id;
     if (id) {
       if (editingItemType.value === 'flashcard') {
-        await simpleFlashcardRepo.update(id, data as Partial<SimpleFlashcard>);
+        await simpleFlashcardRepo.update(id, plainData as Partial<SimpleFlashcard>);
       } else if (editingItemType.value === 'concept') {
-        await elaborativeInterrogationRepo.update(id, data as Partial<ElaborativeInterrogationConcept>);
+        await elaborativeInterrogationRepo.update(id, plainData as Partial<ElaborativeInterrogationConcept>);
       } else if (editingItemType.value === 'list') {
-        await listRepo.update(id, data as Partial<List>);
+        await listRepo.update(id, plainData as Partial<List>);
       }
     }
   }
