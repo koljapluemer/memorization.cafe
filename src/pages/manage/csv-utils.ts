@@ -1,3 +1,5 @@
+import Papa from 'papaparse';
+
 export type EntityType = 'flashcard' | 'concept' | 'list' | 'cloze';
 
 export interface FlashcardCsvRow {
@@ -84,64 +86,24 @@ export function downloadCsv(content: string, filename: string): void {
  * Parses CSV text into an array of objects
  */
 export function parseCsv(csvText: string): Record<string, string>[] {
-  const lines = csvText.trim().split('\n');
-  if (lines.length < 2) {
+  const result = Papa.parse<Record<string, string>>(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (header: string) => header.trim(),
+  });
+
+  if (result.errors.length > 0) {
+    const firstError = result.errors[0];
+    if (firstError) {
+      throw new Error(`CSV parse error at row ${firstError.row}: ${firstError.message}`);
+    }
+  }
+
+  if (result.data.length === 0) {
     throw new Error('CSV file must have at least a header row and one data row');
   }
 
-  const headers = parseCsvLine(lines[0]!);
-  const rows: Record<string, string>[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]!.trim();
-    if (!line) continue; // Skip empty lines
-
-    const values = parseCsvLine(line);
-
-    if (values.length !== headers.length) {
-      throw new Error(`Row ${i + 1} has ${values.length} columns but expected ${headers.length}`);
-    }
-
-    const row: Record<string, string> = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index] || '';
-    });
-    rows.push(row);
-  }
-
-  return rows;
-}
-
-/**
- * Parses a single CSV line, handling quoted fields
- */
-function parseCsvLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]!;
-    const nextChar = line[i + 1];
-
-    if (char === '"' && inQuotes && nextChar === '"') {
-      // Escaped quote
-      current += '"';
-      i++; // Skip next quote
-    } else if (char === '"') {
-      // Toggle quote mode
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      // Field separator
-      result.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result;
+  return result.data;
 }
 
 /**

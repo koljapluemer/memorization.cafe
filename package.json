@@ -19,6 +19,7 @@
     "ebisu-js": "^2.1.3",
     "lucide-vue-next": "^0.544.0",
     "marked": "^16.3.0",
+    "papaparse": "^5.5.3",
     "ts-fsrs": "^5.2.3",
     "vue": "^3.5.22",
     "vue-router": "^4.5.1"
@@ -28,6 +29,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@types/dompurify": "^3.2.0",
     "@types/node": "^24.6.2",
+    "@types/papaparse": "^5.3.16",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
     "autoprefixer": "^10.4.21",
