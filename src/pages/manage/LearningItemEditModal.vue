@@ -10,24 +10,28 @@
 
       <SimpleFlashcardEdit
         v-if="itemType === 'flashcard'"
+        :key="componentKey"
         :flashcard="(item as SimpleFlashcard | undefined)"
         @update="handleUpdate"
       />
 
       <ElaborativeInterrogationEdit
         v-else-if="itemType === 'concept'"
+        :key="componentKey"
         :concept="(item as ElaborativeInterrogationConcept | undefined)"
         @update="handleUpdate"
       />
 
       <ListEdit
         v-else-if="itemType === 'list'"
+        :key="componentKey"
         :list="(item as List | undefined)"
         @update="handleUpdate"
       />
 
       <ClozeEdit
         v-else-if="itemType === 'cloze'"
+        :key="componentKey"
         :cloze="(item as Cloze | undefined)"
         @update="handleUpdate"
       />
@@ -71,6 +75,7 @@ const emit = defineEmits<{
 
 const modalRef = ref<HTMLDialogElement | null>(null);
 const localData = ref<unknown>({});
+const componentKey = ref(0);
 
 const title = computed(() => {
   if (props.isNew) {
@@ -88,6 +93,7 @@ const title = computed(() => {
 
 function open() {
   localData.value = {};
+  componentKey.value++; // Force component to remount
   modalRef.value?.showModal();
 }
 
