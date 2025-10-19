@@ -77,14 +77,18 @@ const modalRef = ref<HTMLDialogElement | null>(null);
 const localName = ref('');
 const localDescription = ref('');
 
-function open() {
-  localName.value = props.collection?.name || '';
-  localDescription.value = props.collection?.description || '';
+function open(collection?: Collection) {
+  // Use passed argument instead of props
+  localName.value = collection?.name || '';
+  localDescription.value = collection?.description || '';
   modalRef.value?.showModal();
 }
 
 function close() {
   modalRef.value?.close();
+  // Reset local state on close
+  localName.value = '';
+  localDescription.value = '';
 }
 
 function handleSave() {

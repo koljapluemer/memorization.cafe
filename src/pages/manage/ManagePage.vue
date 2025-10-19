@@ -259,7 +259,8 @@ function switchToTab(collectionId: string) {
 function openCollectionModal(collection: Collection | null, isNew: boolean) {
   editingCollection.value = collection || undefined;
   isNewCollection.value = isNew;
-  collectionModalRef.value?.open();
+  // Pass the collection directly to open()
+  collectionModalRef.value?.open(collection || undefined);
 }
 
 async function handleSaveCollection(data: { name: string; description?: string }) {

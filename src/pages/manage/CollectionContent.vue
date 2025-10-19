@@ -6,7 +6,7 @@
         Collection Actions
       </summary>
       <div class="collapse-content space-y-4">
-        <div class="space-y-2">
+        <div class="flex gap-2">
           <button
             class="btn btn-sm"
             @click="$emit('edit-collection')"
@@ -14,7 +14,7 @@
             <Edit :size="16" /> Edit Collection
           </button>
           <button
-            class="btn btn-sm btn-error"
+            class="btn btn-sm"
             @click="$emit('delete-collection')"
           >
             <Trash2 :size="16" /> Delete Collection
