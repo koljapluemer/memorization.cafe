@@ -5,19 +5,33 @@
       <summary class="collapse-title font-medium">
         Collection Actions
       </summary>
-      <div class="collapse-content space-y-2">
-        <button
-          class="btn btn-sm"
-          @click="$emit('edit-collection')"
-        >
-          <Edit :size="16" /> Edit Collection
-        </button>
-        <button
-          class="btn btn-sm btn-error"
-          @click="$emit('delete-collection')"
-        >
-          <Trash2 :size="16" /> Delete Collection
-        </button>
+      <div class="collapse-content space-y-4">
+        <div class="space-y-2">
+          <button
+            class="btn btn-sm"
+            @click="$emit('edit-collection')"
+          >
+            <Edit :size="16" /> Edit Collection
+          </button>
+          <button
+            class="btn btn-sm btn-error"
+            @click="$emit('delete-collection')"
+          >
+            <Trash2 :size="16" /> Delete Collection
+          </button>
+        </div>
+
+        <div class="divider" />
+
+        <div>
+          <h4 class="font-semibold mb-2 text-sm">
+            Import/Export Learning Items
+          </h4>
+          <CsvImportExportTable
+            @download-example="handleDownloadExample"
+            @import-csv="handleImportCsv"
+          />
+        </div>
       </div>
     </details>
 
@@ -64,6 +78,8 @@
 import { Edit, Trash2 } from 'lucide-vue-next';
 
 import LearningItemsTable, { type LearningItem } from './LearningItemsTable.vue';
+import CsvImportExportTable from './CsvImportExportTable.vue';
+import type { EntityType } from './csv-utils';
 
 import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
 import type { Collection } from '@/entities/collection';
@@ -73,7 +89,7 @@ defineProps<{
   learningItems: LearningItem[];
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   'edit-collection': [];
   'delete-collection': [];
   'add-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze'];
@@ -81,5 +97,15 @@ defineEmits<{
   'delete-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', id: string];
   'preview-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
   'move-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
+  'download-example-csv': [type: EntityType];
+  'import-csv': [type: EntityType];
 }>();
+
+function handleDownloadExample(type: EntityType) {
+  emit('download-example-csv', type);
+}
+
+function handleImportCsv(type: EntityType) {
+  emit('import-csv', type);
+}
 </script>

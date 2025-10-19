@@ -35,7 +35,7 @@
               class="flex items-center gap-2"
             >
               <input
-                v-model="localSelectedCollectionIds"
+                v-model="selectedCollectionIds"
                 type="checkbox"
                 class="checkbox checkbox-sm"
                 :value="collection.id"
@@ -67,7 +67,7 @@
           <div class="space-y-2">
             <label class="flex items-center gap-2">
               <input
-                v-model="localSelectedItemTypes"
+                v-model="selectedItemTypes"
                 type="checkbox"
                 class="checkbox checkbox-sm"
                 value="flashcard"
@@ -76,7 +76,7 @@
             </label>
             <label class="flex items-center gap-2">
               <input
-                v-model="localSelectedItemTypes"
+                v-model="selectedItemTypes"
                 type="checkbox"
                 class="checkbox checkbox-sm"
                 value="concept"
@@ -85,7 +85,7 @@
             </label>
             <label class="flex items-center gap-2">
               <input
-                v-model="localSelectedItemTypes"
+                v-model="selectedItemTypes"
                 type="checkbox"
                 class="checkbox checkbox-sm"
                 value="list"
@@ -94,7 +94,7 @@
             </label>
             <label class="flex items-center gap-2">
               <input
-                v-model="localSelectedItemTypes"
+                v-model="selectedItemTypes"
                 type="checkbox"
                 class="checkbox checkbox-sm"
                 value="cloze"
@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 import type { PracticeFilters } from './filter-storage';
 
@@ -148,12 +148,40 @@ const emit = defineEmits<{
 }>();
 
 const modalRef = ref<HTMLDialogElement | null>(null);
-const localSelectedCollectionIds = ref<string[]>([]);
-const localSelectedItemTypes = ref<('flashcard' | 'concept' | 'list' | 'cloze')[]>([]);
+const localExcludedCollectionIds = ref<string[]>([]);
+const localExcludedItemTypes = ref<('flashcard' | 'concept' | 'list' | 'cloze')[]>([]);
 
 onMounted(() => {
-  localSelectedCollectionIds.value = [...props.currentFilters.selectedCollectionIds];
-  localSelectedItemTypes.value = [...props.currentFilters.selectedItemTypes];
+  localExcludedCollectionIds.value = [...props.currentFilters.excludedCollectionIds];
+  localExcludedItemTypes.value = [...props.currentFilters.excludedItemTypes];
+});
+
+// Computed properties that invert the exclusion logic for checkbox binding
+const selectedCollectionIds = computed({
+  get: () => {
+    // Selected = all collections that are NOT excluded
+    return props.collections
+      .map(c => c.id!)
+      .filter(id => !localExcludedCollectionIds.value.includes(id));
+  },
+  set: (newSelected: string[]) => {
+    // Update excluded list to be all collections NOT in the selected list
+    const allIds = props.collections.map(c => c.id!);
+    localExcludedCollectionIds.value = allIds.filter(id => !newSelected.includes(id));
+  },
+});
+
+const selectedItemTypes = computed({
+  get: () => {
+    // Selected = all types that are NOT excluded
+    const allTypes: ('flashcard' | 'concept' | 'list' | 'cloze')[] = ['flashcard', 'concept', 'list', 'cloze'];
+    return allTypes.filter(type => !localExcludedItemTypes.value.includes(type));
+  },
+  set: (newSelected: ('flashcard' | 'concept' | 'list' | 'cloze')[]) => {
+    // Update excluded list to be all types NOT in the selected list
+    const allTypes: ('flashcard' | 'concept' | 'list' | 'cloze')[] = ['flashcard', 'concept', 'list', 'cloze'];
+    localExcludedItemTypes.value = allTypes.filter(type => !newSelected.includes(type));
+  },
 });
 
 function open() {
@@ -165,25 +193,29 @@ function close() {
 }
 
 function selectAllCollections() {
-  localSelectedCollectionIds.value = props.collections.map(c => c.id!);
+  // "Select All" means exclude nothing
+  localExcludedCollectionIds.value = [];
 }
 
 function deselectAllCollections() {
-  localSelectedCollectionIds.value = [];
+  // "Deselect All" means exclude everything
+  localExcludedCollectionIds.value = props.collections.map(c => c.id!);
 }
 
 function selectAllTypes() {
-  localSelectedItemTypes.value = ['flashcard', 'concept', 'list', 'cloze'];
+  // "Select All" means exclude nothing
+  localExcludedItemTypes.value = [];
 }
 
 function deselectAllTypes() {
-  localSelectedItemTypes.value = [];
+  // "Deselect All" means exclude everything
+  localExcludedItemTypes.value = ['flashcard', 'concept', 'list', 'cloze'];
 }
 
 function handleApply() {
   emit('apply', {
-    selectedCollectionIds: localSelectedCollectionIds.value,
-    selectedItemTypes: localSelectedItemTypes.value,
+    excludedCollectionIds: localExcludedCollectionIds.value,
+    excludedItemTypes: localExcludedItemTypes.value,
   });
   close();
 }

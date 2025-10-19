@@ -78,13 +78,6 @@ const currentItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze' | null>(n
 
 onMounted(async () => {
   collections.value = await collectionRepo.getAll();
-
-  // Initialize filters if empty
-  if (filters.value.selectedCollectionIds.length === 0) {
-    filters.value.selectedCollectionIds = collections.value.map(c => c.id!);
-    saveFilters(filters.value);
-  }
-
   await loadNextItem();
 });
 
@@ -92,13 +85,22 @@ async function loadNextItem() {
   currentItem.value = null;
   currentItemType.value = null;
 
-  const activeCollectionIds = filters.value.selectedCollectionIds.length > 0
-    ? filters.value.selectedCollectionIds
-    : collections.value.map(c => c.id!);
+  // Calculate active collections (all collections minus excluded ones)
+  const allCollectionIds = collections.value.map(c => c.id!);
+  const activeCollectionIds = allCollectionIds.filter(
+    id => !filters.value.excludedCollectionIds.includes(id)
+  );
 
   if (activeCollectionIds.length === 0) return;
 
-  const activeTypes = filters.value.selectedItemTypes;
+  // Calculate active types (all types minus excluded ones)
+  const allTypes: ('flashcard' | 'concept' | 'list' | 'cloze')[] = ['flashcard', 'concept', 'list', 'cloze'];
+  const activeTypes = allTypes.filter(
+    type => !filters.value.excludedItemTypes.includes(type)
+  );
+
+  if (activeTypes.length === 0) return;
+
   const shuffledTypes = [...activeTypes].sort(() => Math.random() - 0.5);
 
   for (const itemType of shuffledTypes) {

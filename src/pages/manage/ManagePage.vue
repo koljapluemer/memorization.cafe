@@ -32,7 +32,18 @@
         @delete-item="handleDeleteItem"
         @preview-item="openPreviewModal"
         @move-item="openMoveItemModal"
+        @download-example-csv="handleDownloadExampleCsv"
+        @import-csv="handleImportCsvClick"
       />
+
+      <!-- Hidden file input for CSV import -->
+      <input
+        ref="csvFileInputRef"
+        type="file"
+        accept=".csv"
+        class="hidden"
+        @change="handleCsvFileSelected"
+      >
     </template>
 
     <!-- Modals -->
@@ -86,6 +97,8 @@ import PreviewModal from './PreviewModal.vue';
 import MoveItemModal from './MoveItemModal.vue';
 import OpenCollectionModal from './OpenCollectionModal.vue';
 import { loadOpenTabs, saveOpenTabs } from './tab-storage';
+import { generateExampleCsv, downloadCsv, parseCsv, validateCsvData, readFileAsText, type EntityType } from './csv-utils';
+import { importFlashcardsFromCsv, importConceptsFromCsv, importListsFromCsv, importClozesFromCsv } from './csv-import';
 
 import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
 import { collectionRepo, type Collection } from '@/entities/collection';
@@ -122,6 +135,9 @@ const previewItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List
 
 const movingItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze'>('flashcard');
 const movingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze | null>(null);
+
+const csvFileInputRef = ref<HTMLInputElement | null>(null);
+const pendingImportType = ref<EntityType | null>(null);
 
 const { show: showToast } = useToast();
 
@@ -425,6 +441,97 @@ function getItemName(item: SimpleFlashcard | ElaborativeInterrogationConcept | L
     return cloze.content.length > 20 ? cloze.content.substring(0, 20) + '...' : cloze.content;
   }
   return 'Item';
+}
+
+// CSV Import/Export handlers
+function handleDownloadExampleCsv(type: EntityType) {
+  const csv = generateExampleCsv(type);
+  const entityName = getEntityDisplayName(type);
+  downloadCsv(csv, `${entityName}-example.csv`);
+  showToast(`Downloaded example CSV for ${entityName}`, 'success');
+}
+
+function handleImportCsvClick(type: EntityType) {
+  pendingImportType.value = type;
+  // Reset and trigger file input
+  if (csvFileInputRef.value) {
+    csvFileInputRef.value.value = '';
+    csvFileInputRef.value.click();
+  }
+}
+
+async function handleCsvFileSelected(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  const importType = pendingImportType.value;
+
+  if (!file || !importType || !activeTabId.value) {
+    return;
+  }
+
+  try {
+    // Read and parse CSV
+    const csvText = await readFileAsText(file);
+    const data = parseCsv(csvText);
+
+    // Validate
+    const validation = validateCsvData(importType, data);
+    if (!validation.valid) {
+      showToast(`CSV validation failed:\n${validation.errors.join('\n')}`, 'error');
+      return;
+    }
+
+    // Import based on type
+    let result;
+    switch (importType) {
+      case 'flashcard':
+        result = await importFlashcardsFromCsv(data, activeTabId.value);
+        break;
+      case 'concept':
+        result = await importConceptsFromCsv(data, activeTabId.value);
+        break;
+      case 'list':
+        result = await importListsFromCsv(data, activeTabId.value);
+        break;
+      case 'cloze':
+        result = await importClozesFromCsv(data, activeTabId.value);
+        break;
+    }
+
+    // Reload items
+    await loadLearningItems();
+
+    // Show result
+    const entityName = getEntityDisplayName(importType);
+    if (result.success > 0 && result.failed === 0) {
+      showToast(`Successfully imported ${result.success} ${entityName}(s)`, 'success');
+    } else if (result.success > 0 && result.failed > 0) {
+      showToast(
+        `Imported ${result.success} ${entityName}(s), ${result.failed} failed:\n${result.errors.slice(0, 3).join('\n')}`,
+        'warning'
+      );
+    } else {
+      showToast(`Import failed:\n${result.errors.slice(0, 3).join('\n')}`, 'error');
+    }
+  } catch (error) {
+    showToast(`Failed to import CSV: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+  }
+
+  // Clear pending state
+  pendingImportType.value = null;
+}
+
+function getEntityDisplayName(type: EntityType): string {
+  switch (type) {
+    case 'flashcard':
+      return 'Flashcard';
+    case 'concept':
+      return 'Concept';
+    case 'list':
+      return 'List';
+    case 'cloze':
+      return 'Cloze';
+  }
 }
 </script>
 
