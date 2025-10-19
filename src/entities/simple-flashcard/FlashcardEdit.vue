@@ -59,6 +59,17 @@
         <span class="label-text-alt text-error">{{ validationError }}</span>
       </label>
     </div>
+
+    <div class="form-control w-full">
+      <label class="label cursor-pointer justify-start gap-2">
+        <input
+          v-model="localIsDisabled"
+          type="checkbox"
+          class="checkbox checkbox-xs"
+        >
+        <span class="label-text">Disable this flashcard (won't appear in practice)</span>
+      </label>
+    </div>
   </div>
 </template>
 
@@ -72,13 +83,14 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  update: [data: { front: string; back: string; practiceAsFlashcard: boolean; practiceAsPrompt: boolean }];
+  update: [data: { front: string; back: string; practiceAsFlashcard: boolean; practiceAsPrompt: boolean; isDisabled: boolean }];
 }>();
 
 const localFront = ref(props.flashcard?.front || '');
 const localBack = ref(props.flashcard?.back || '');
 const localPracticeAsFlashcard = ref(props.flashcard?.practiceAsFlashcard ?? true);
 const localPracticeAsPrompt = ref(props.flashcard?.practiceAsPrompt ?? false);
+const localIsDisabled = ref(props.flashcard?.isDisabled ?? false);
 
 const validationError = computed(() => {
   if (!localPracticeAsFlashcard.value && !localPracticeAsPrompt.value) {
@@ -87,12 +99,13 @@ const validationError = computed(() => {
   return '';
 });
 
-watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt], () => {
+watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, localIsDisabled], () => {
   emit('update', {
     front: localFront.value,
     back: localBack.value,
     practiceAsFlashcard: localPracticeAsFlashcard.value,
     practiceAsPrompt: localPracticeAsPrompt.value,
+    isDisabled: localIsDisabled.value,
   });
 });
 </script>

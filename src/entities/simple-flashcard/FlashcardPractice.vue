@@ -82,11 +82,18 @@
 
       <div class="flex gap-2 justify-center mt-4">
         <button
+          class="btn btn-ghost"
+          @click="handleDisable"
+        >
+          Disable
+        </button>
+        <button
           class="btn"
           @click="handleRating(Rating.Again)"
         >
           Again
         </button>
+
         <button
           class="btn"
           @click="handleRating(Rating.Hard)"
@@ -118,6 +125,7 @@ import { Check } from 'lucide-vue-next';
 import type { SimpleFlashcard } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
 
 const props = defineProps<{
   flashcard: SimpleFlashcard;
@@ -168,6 +176,13 @@ function handleDone() {
   if (userResponse.value.trim().length > 0) {
     revealed.value = true;
   }
+}
+
+async function handleDisable() {
+  if (!props.flashcard.id) return;
+
+  await simpleFlashcardRepo.update(props.flashcard.id, { isDisabled: true });
+  emit('complete');
 }
 
 async function handleRating(rating: Rating) {

@@ -1,9 +1,17 @@
 <template>
-  <span>{{ truncatedFront }} | {{ truncatedBack }}</span>
+  <span :class="{ 'opacity-50': flashcard.isDisabled }">
+    <CircleSlash
+      v-if="flashcard.isDisabled"
+      :size="14"
+      class="inline mr-1"
+    />
+    {{ truncatedFront }} | {{ truncatedBack }}
+  </span>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { CircleSlash } from 'lucide-vue-next';
 
 import type { SimpleFlashcard } from '@/app/database';
 

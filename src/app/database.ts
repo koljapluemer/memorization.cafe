@@ -17,6 +17,7 @@ export interface SimpleFlashcard {
   back: string;
   practiceAsFlashcard: boolean;
   practiceAsPrompt: boolean;
+  isDisabled?: boolean;
   realmId?: string;
 }
 
@@ -123,6 +124,16 @@ export class MemorizationDatabase extends Dexie {
     this.version(4).stores({
       collections: '@id, name',
       flashcards: '@id, collectionId',
+      concepts: '@id, collectionId, name',
+      lists: '@id, collectionId, name',
+      clozes: '@id, collectionId',
+      learningProgress: '@id, learningItemId, itemType, owner',
+      questionLists: '@id, name, isDefault',
+    });
+
+    this.version(5).stores({
+      collections: '@id, name',
+      flashcards: '@id, collectionId, isDisabled',
       concepts: '@id, collectionId, name',
       lists: '@id, collectionId, name',
       clozes: '@id, collectionId',

@@ -25,10 +25,13 @@ export const simpleFlashcardRepo: SimpleFlashcardContract = {
 
     if (allFlashcards.length === 0) return null;
 
-    const flashcardIds = allFlashcards.map((f: SimpleFlashcard) => f.id!);
+    // Filter out disabled flashcards
+    const enabledFlashcards = allFlashcards.filter((f: SimpleFlashcard) => !f.isDisabled);
+
+    const flashcardIds = enabledFlashcards.map((f: SimpleFlashcard) => f.id!);
     const progressRecords = await learningProgressRepo.getAllProgressForItems(flashcardIds);
 
-    const dueFlashcards = allFlashcards.filter((flashcard: SimpleFlashcard) => {
+    const dueFlashcards = enabledFlashcards.filter((flashcard: SimpleFlashcard) => {
       const progress = progressRecords.find((p: { learningItemId: string }) => p.learningItemId === flashcard.id);
       if (!progress?.cardData) return false;
       return progress.cardData.due <= now;
@@ -43,7 +46,8 @@ export const simpleFlashcardRepo: SimpleFlashcardContract = {
       .anyOf(collectionIds)
       .toArray();
 
-    const newFlashcards = allFlashcards.filter((f: SimpleFlashcard) => !existingProgressIds.includes(f.id!));
+    // Filter out disabled flashcards and those with existing progress
+    const newFlashcards = allFlashcards.filter((f: SimpleFlashcard) => !f.isDisabled && !existingProgressIds.includes(f.id!));
     return getRandomItem(newFlashcards);
   },
 
