@@ -83,6 +83,15 @@
               >
               <span>Elaborative Interrogation</span>
             </label>
+            <label class="flex items-center gap-2">
+              <input
+                v-model="localSelectedItemTypes"
+                type="checkbox"
+                class="checkbox checkbox-sm"
+                value="list"
+              >
+              <span>Lists</span>
+            </label>
           </div>
         </div>
       </div>
@@ -131,7 +140,7 @@ const emit = defineEmits<{
 
 const modalRef = ref<HTMLDialogElement | null>(null);
 const localSelectedCollectionIds = ref<string[]>([]);
-const localSelectedItemTypes = ref<('flashcard' | 'concept')[]>([]);
+const localSelectedItemTypes = ref<('flashcard' | 'concept' | 'list')[]>([]);
 
 onMounted(() => {
   localSelectedCollectionIds.value = [...props.currentFilters.selectedCollectionIds];
@@ -155,7 +164,7 @@ function deselectAllCollections() {
 }
 
 function selectAllTypes() {
-  localSelectedItemTypes.value = ['flashcard', 'concept'];
+  localSelectedItemTypes.value = ['flashcard', 'concept', 'list'];
 }
 
 function deselectAllTypes() {

@@ -2,7 +2,7 @@ const STORAGE_KEY = 'practice-filters';
 
 export interface PracticeFilters {
   selectedCollectionIds: string[];
-  selectedItemTypes: ('flashcard' | 'concept')[];
+  selectedItemTypes: ('flashcard' | 'concept' | 'list')[];
 }
 
 export function loadFilters(): PracticeFilters {
@@ -11,14 +11,14 @@ export function loadFilters(): PracticeFilters {
     if (!stored) {
       return {
         selectedCollectionIds: [],
-        selectedItemTypes: ['flashcard', 'concept'],
+        selectedItemTypes: ['flashcard', 'concept', 'list'],
       };
     }
     return JSON.parse(stored);
   } catch {
     return {
       selectedCollectionIds: [],
-      selectedItemTypes: ['flashcard', 'concept'],
+      selectedItemTypes: ['flashcard', 'concept', 'list'],
     };
   }
 }

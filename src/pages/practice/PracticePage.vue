@@ -11,6 +11,11 @@
         :concept="currentItem as ElaborativeInterrogationConcept"
         @complete="loadNextItem"
       />
+      <ListPractice
+        v-else-if="currentItemType === 'list'"
+        :list="currentItem as List"
+        @complete="loadNextItem"
+      />
     </div>
 
     <div
@@ -50,20 +55,20 @@ import { Filter } from 'lucide-vue-next';
 import FilterModal from './FilterModal.vue';
 import { loadFilters, saveFilters, type PracticeFilters } from './filter-storage';
 
-import type { SimpleFlashcard } from '@/app/database';
-import type { ElaborativeInterrogationConcept } from '@/app/database';
+import type { SimpleFlashcard, ElaborativeInterrogationConcept, List } from '@/app/database';
 import { collectionRepo, type Collection } from '@/entities/collection';
 import { elaborativeInterrogationRepo, ElaborativeInterrogationPractice } from '@/entities/elaborative-interrogation';
 import { learningProgressRepo } from '@/entities/learning-progress';
 import { simpleFlashcardRepo, SimpleFlashcardPractice } from '@/entities/simple-flashcard';
+import { listRepo, ListPractice } from '@/entities/list';
 
 
 const collections = ref<Collection[]>([]);
 const filters = ref<PracticeFilters>(loadFilters());
 const filterModalRef = ref<InstanceType<typeof FilterModal> | null>(null);
 
-const currentItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | null>(null);
-const currentItemType = ref<'flashcard' | 'concept' | null>(null);
+const currentItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | null>(null);
+const currentItemType = ref<'flashcard' | 'concept' | 'list' | null>(null);
 
 onMounted(async () => {
   collections.value = await collectionRepo.getAll();
@@ -131,6 +136,26 @@ async function loadNextItem() {
       if (newConcept) {
         currentItem.value = newConcept;
         currentItemType.value = 'concept';
+        return;
+      }
+    } else if (itemType === 'list') {
+      // Try to get a due list
+      const dueList = await listRepo.getRandomDue(activeCollectionIds, now);
+      if (dueList) {
+        currentItem.value = dueList;
+        currentItemType.value = 'list';
+        return;
+      }
+
+      // Try to get a new list
+      const allProgress = await learningProgressRepo.getAllProgressForItems(
+        (await listRepo.getAll()).map(l => l.id!)
+      );
+      const existingIds = allProgress.map(p => p.learningItemId);
+      const newList = await listRepo.getRandomNew(activeCollectionIds, existingIds);
+      if (newList) {
+        currentItem.value = newList;
+        currentItemType.value = 'list';
         return;
       }
     }
