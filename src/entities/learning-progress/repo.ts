@@ -1,4 +1,5 @@
 import type { Card } from 'ts-fsrs';
+import type { Model as EbisuModel } from 'ebisu-js';
 
 import type { LearningProgressContract } from './contract';
 
@@ -66,6 +67,30 @@ export const learningProgressRepo: LearningProgressContract = {
       .where('learningItemId')
       .anyOf(learningItemIds)
       .toArray();
+  },
+
+  async createEbisuProgress(learningItemId: string, itemType: 'list', initialModel: EbisuModel): Promise<string> {
+    const id = await db.learningProgress.add({
+      learningItemId,
+      itemType,
+      listData: {
+        model: initialModel,
+        lastReviewTimestamp: new Date(),
+      },
+    } as LearningProgress);
+    return id;
+  },
+
+  async updateEbisuProgress(learningItemId: string, model: EbisuModel): Promise<void> {
+    const existing = await this.getByLearningItemId(learningItemId);
+    if (existing?.id) {
+      await db.learningProgress.update(existing.id, {
+        listData: {
+          model,
+          lastReviewTimestamp: new Date(),
+        },
+      });
+    }
   },
 
   async delete(learningItemId: string): Promise<void> {

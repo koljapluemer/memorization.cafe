@@ -1,4 +1,5 @@
 import type { Card } from 'ts-fsrs';
+import type { Model as EbisuModel } from 'ebisu-js';
 
 import type { LearningProgress } from '@/app/database';
 
@@ -13,6 +14,10 @@ export interface LearningProgressContract {
   createConceptProgress(learningItemId: string): Promise<string>;
   addConceptAnswer(learningItemId: string, question: string, answer: string): Promise<void>;
   getLastAnswerTime(learningItemId: string): Promise<Date | null>;
+
+  // For items using ebisu.js (like lists)
+  createEbisuProgress(learningItemId: string, itemType: 'list', initialModel: EbisuModel): Promise<string>;
+  updateEbisuProgress(learningItemId: string, model: EbisuModel): Promise<void>;
 
   // General queries
   getAllProgressForItems(learningItemIds: string[]): Promise<LearningProgress[]>;

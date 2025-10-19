@@ -1,5 +1,33 @@
-# Vue 3 + TypeScript + Vite
+# memorization.cafe
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+A spaced repetition learning application built with Vue 3, TypeScript, and Vite.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## Features
+
+- Multiple learning item types: flashcards, elaborative interrogation concepts, and lists
+- Intelligent spaced repetition using ts-fsrs (flashcards) and ebisu.js (lists)
+- Markdown support for content
+- Offline-capable PWA with Dexie.js for local storage
+- Optional cloud sync via Dexie Cloud
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+**Important**: The build process includes a postinstall script that patches the `ebisu-js` library to fix TypeScript compilation issues. This runs automatically on `npm install`.
+
+## Deployment (Netlify, Vercel, etc.)
+
+**Build Command**: `npm run build`
+**Publish Directory**: `dist`
+
+The postinstall script runs automatically during `npm install`, so the standard build command works for all deployment platforms.

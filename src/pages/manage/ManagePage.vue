@@ -61,6 +61,12 @@
         >
           + Elaborative Interrogation Concept
         </button>
+        <button
+          class="btn btn-sm"
+          @click="openItemModal('list', null, true)"
+        >
+          + List
+        </button>
       </div>
 
       <!-- Learning Items Table -->
@@ -79,6 +85,10 @@
                 <ElaborativeInterrogationRow
                   v-else-if="item.type === 'concept'"
                   :concept="item.data"
+                />
+                <ListRow
+                  v-else-if="item.type === 'list'"
+                  :list="item.data"
                 />
               </td>
               <td class="text-right">
@@ -142,16 +152,18 @@ import CollectionEditModal from './CollectionEditModal.vue';
 import LearningItemEditModal from './LearningItemEditModal.vue';
 import PreviewModal from './PreviewModal.vue';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept } from '@/app/database';
+import type { SimpleFlashcard, ElaborativeInterrogationConcept, List } from '@/app/database';
 import { collectionRepo, type Collection } from '@/entities/collection';
 import { elaborativeInterrogationRepo, ElaborativeInterrogationRow } from '@/entities/elaborative-interrogation';
 import { simpleFlashcardRepo, SimpleFlashcardRow } from '@/entities/simple-flashcard';
+import { listRepo, ListRow } from '@/entities/list';
 
 const collections = ref<Collection[]>([]);
 const activeCollectionId = ref<string | null>(null);
 
 const flashcards = ref<SimpleFlashcard[]>([]);
 const concepts = ref<ElaborativeInterrogationConcept[]>([]);
+const lists = ref<List[]>([]);
 
 const collectionModalRef = ref<InstanceType<typeof CollectionEditModal> | null>(null);
 const itemModalRef = ref<InstanceType<typeof LearningItemEditModal> | null>(null);
@@ -160,12 +172,12 @@ const previewModalRef = ref<InstanceType<typeof PreviewModal> | null>(null);
 const editingCollection = ref<Collection | undefined>(undefined);
 const isNewCollection = ref(false);
 
-const editingItemType = ref<'flashcard' | 'concept'>('flashcard');
-const editingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | undefined>(undefined);
+const editingItemType = ref<'flashcard' | 'concept' | 'list'>('flashcard');
+const editingItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | undefined>(undefined);
 const isNewItem = ref(false);
 
-const previewItemType = ref<'flashcard' | 'concept'>('flashcard');
-const previewItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | null>(null);
+const previewItemType = ref<'flashcard' | 'concept' | 'list'>('flashcard');
+const previewItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | null>(null);
 
 const activeCollection = computed(() =>
   collections.value.find(c => c.id === activeCollectionId.value)
@@ -181,6 +193,9 @@ const allLearningItems = computed(() => {
     ...concepts.value
       .filter(c => c.collectionId === activeCollectionId.value)
       .map(c => ({ type: 'concept' as const, data: c, id: c.id })),
+    ...lists.value
+      .filter(l => l.collectionId === activeCollectionId.value)
+      .map(l => ({ type: 'list' as const, data: l, id: l.id })),
   ];
 
   return items;
@@ -204,6 +219,7 @@ async function loadCollections() {
 async function loadLearningItems() {
   flashcards.value = await simpleFlashcardRepo.getAll();
   concepts.value = await elaborativeInterrogationRepo.getAll();
+  lists.value = await listRepo.getAll();
 }
 
 function openCollectionModal(collection: Collection | null, isNew: boolean) {
@@ -237,8 +253,10 @@ async function handleDeleteCollection() {
     if (item.data.id) {
       if (item.type === 'flashcard') {
         await simpleFlashcardRepo.delete(item.data.id);
-      } else {
+      } else if (item.type === 'concept') {
         await elaborativeInterrogationRepo.delete(item.data.id);
+      } else if (item.type === 'list') {
+        await listRepo.delete(item.data.id);
       }
     }
   }
@@ -251,7 +269,7 @@ async function handleDeleteCollection() {
   await loadLearningItems();
 }
 
-function openItemModal(type: 'flashcard' | 'concept', item: SimpleFlashcard | ElaborativeInterrogationConcept | null, isNew: boolean) {
+function openItemModal(type: 'flashcard' | 'concept' | 'list', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | null, isNew: boolean) {
   editingItemType.value = type;
   editingItem.value = item || undefined;
   isNewItem.value = isNew;
@@ -269,16 +287,20 @@ async function handleSaveItem(data: unknown) {
   if (isNewItem.value) {
     if (editingItemType.value === 'flashcard') {
       await simpleFlashcardRepo.create(itemData as Omit<SimpleFlashcard, 'id'>);
-    } else {
+    } else if (editingItemType.value === 'concept') {
       await elaborativeInterrogationRepo.create(itemData as Omit<ElaborativeInterrogationConcept, 'id'>);
+    } else if (editingItemType.value === 'list') {
+      await listRepo.create(itemData as Omit<List, 'id'>);
     }
   } else {
     const id = (editingItem.value as { id?: string })?.id;
     if (id) {
       if (editingItemType.value === 'flashcard') {
         await simpleFlashcardRepo.update(id, data as Partial<SimpleFlashcard>);
-      } else {
+      } else if (editingItemType.value === 'concept') {
         await elaborativeInterrogationRepo.update(id, data as Partial<ElaborativeInterrogationConcept>);
+      } else if (editingItemType.value === 'list') {
+        await listRepo.update(id, data as Partial<List>);
       }
     }
   }
@@ -286,20 +308,22 @@ async function handleSaveItem(data: unknown) {
   await loadLearningItems();
 }
 
-async function handleDeleteItem(type: 'flashcard' | 'concept', id: string) {
+async function handleDeleteItem(type: 'flashcard' | 'concept' | 'list', id: string) {
   const confirmed = confirm('Delete this learning item?');
   if (!confirmed) return;
 
   if (type === 'flashcard') {
     await simpleFlashcardRepo.delete(id);
-  } else {
+  } else if (type === 'concept') {
     await elaborativeInterrogationRepo.delete(id);
+  } else if (type === 'list') {
+    await listRepo.delete(id);
   }
 
   await loadLearningItems();
 }
 
-function openPreviewModal(type: 'flashcard' | 'concept', item: SimpleFlashcard | ElaborativeInterrogationConcept) {
+function openPreviewModal(type: 'flashcard' | 'concept' | 'list', item: SimpleFlashcard | ElaborativeInterrogationConcept | List) {
   previewItemType.value = type;
   previewItem.value = item;
   previewModalRef.value?.open();

@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import dexieCloud from 'dexie-cloud-addon';
 import type { Card } from 'ts-fsrs';
+import type { Model as EbisuModel } from 'ebisu-js';
 
 export interface Collection {
   id?: string;
@@ -25,10 +26,19 @@ export interface ElaborativeInterrogationConcept {
   realmId?: string;
 }
 
+export interface List {
+  id?: string;
+  collectionId: string;
+  name: string;
+  items: string[];
+  isOrderedList: boolean;
+  realmId?: string;
+}
+
 export interface LearningProgress {
   id?: string;
-  learningItemId: string; // References flashcard or concept
-  itemType: 'flashcard' | 'concept';
+  learningItemId: string; // References flashcard, concept, or list
+  itemType: 'flashcard' | 'concept' | 'list';
   owner?: string; // Current user ID (keeps progress private)
   realmId?: string; // User's private realm
 
@@ -41,12 +51,19 @@ export interface LearningProgress {
     answer: string;
     timestamp: Date;
   }>;
+
+  // For lists (ebisu.js Model data)
+  listData?: {
+    model: EbisuModel;
+    lastReviewTimestamp: Date;
+  };
 }
 
 export class MemorizationDatabase extends Dexie {
   collections!: Dexie.Table<Collection, string>;
   flashcards!: Dexie.Table<SimpleFlashcard, string>;
   concepts!: Dexie.Table<ElaborativeInterrogationConcept, string>;
+  lists!: Dexie.Table<List, string>;
   learningProgress!: Dexie.Table<LearningProgress, string>;
 
   constructor() {
@@ -56,6 +73,14 @@ export class MemorizationDatabase extends Dexie {
       collections: '@id, name',
       flashcards: '@id, collectionId',
       concepts: '@id, collectionId, name',
+      learningProgress: '@id, learningItemId, itemType, owner',
+    });
+
+    this.version(2).stores({
+      collections: '@id, name',
+      flashcards: '@id, collectionId',
+      concepts: '@id, collectionId, name',
+      lists: '@id, collectionId, name',
       learningProgress: '@id, learningItemId, itemType, owner',
     });
   }

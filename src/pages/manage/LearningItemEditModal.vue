@@ -20,6 +20,12 @@
         @update="handleUpdate"
       />
 
+      <ListEdit
+        v-else-if="itemType === 'list'"
+        :list="(item as List | undefined)"
+        @update="handleUpdate"
+      />
+
       <div class="modal-action">
         <button
           class="btn btn-primary"
@@ -41,13 +47,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept } from '@/app/database';
+import type { SimpleFlashcard, ElaborativeInterrogationConcept, List } from '@/app/database';
 import { ElaborativeInterrogationEdit } from '@/entities/elaborative-interrogation';
 import { SimpleFlashcardEdit } from '@/entities/simple-flashcard';
+import { ListEdit } from '@/entities/list';
 
 const props = defineProps<{
-  itemType: 'flashcard' | 'concept';
-  item?: SimpleFlashcard | ElaborativeInterrogationConcept;
+  itemType: 'flashcard' | 'concept' | 'list';
+  item?: SimpleFlashcard | ElaborativeInterrogationConcept | List;
   isNew?: boolean;
 }>();
 
@@ -60,9 +67,14 @@ const localData = ref<unknown>({});
 
 const title = computed(() => {
   if (props.isNew) {
-    return props.itemType === 'flashcard' ? 'New Flashcard' : 'New Concept';
+    if (props.itemType === 'flashcard') return 'New Flashcard';
+    if (props.itemType === 'concept') return 'New Concept';
+    if (props.itemType === 'list') return 'New List';
   }
-  return props.itemType === 'flashcard' ? 'Edit Flashcard' : 'Edit Concept';
+  if (props.itemType === 'flashcard') return 'Edit Flashcard';
+  if (props.itemType === 'concept') return 'Edit Concept';
+  if (props.itemType === 'list') return 'Edit List';
+  return '';
 });
 
 function open() {
