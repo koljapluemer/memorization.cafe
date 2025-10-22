@@ -1,5 +1,14 @@
 <template>
   <div class="space-y-4">
+    <div class="flex justify-end">
+      <button
+        class="btn btn-ghost btn-sm"
+        @click="handleDisable"
+      >
+        Disable
+      </button>
+    </div>
+
     <MarkdownText :text="currentQuestion" />
 
     <div
@@ -81,12 +90,6 @@
       />
 
       <div class="flex gap-2 justify-center mt-4">
-        <button
-          class="btn btn-ghost"
-          @click="handleDisable"
-        >
-          Disable
-        </button>
         <button
           class="btn"
           @click="handleRating(Rating.Again)"
