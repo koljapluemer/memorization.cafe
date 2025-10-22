@@ -26,7 +26,7 @@
           </td>
         </tr>
         <tr>
-          <td>Elaborative Interrogation Concepts</td>
+          <td>Concepts</td>
           <td class="flex gap-2">
             <button
               class="btn btn-xs btn-outline"

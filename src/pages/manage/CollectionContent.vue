@@ -47,7 +47,7 @@
         class="btn btn-sm text-left flex justify-start"
         @click="$emit('add-item', 'concept')"
       >
-        + Elaborative Interrogation Concept
+        + Concept
       </button>
       <button
         class="btn btn-sm text-left flex justify-start"
