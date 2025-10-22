@@ -1,7 +1,10 @@
 <template>
   <header class="navbar bg-base-200">
     <div class="flex-1">
-      <span class="text-xl font-bold">Memorization Cafe</span>
+      <div class="flex items-center gap-2">
+        <img src="/android-chrome-192x192.png" alt="MC Logo" class="w-8 h-8" />
+        <h1 class="text-xl font-bold hidden md:block">Memorization Cafe</h1>
+      </div>
     </div>
     <div class="flex-none">
       <nav class="flex gap-2">
