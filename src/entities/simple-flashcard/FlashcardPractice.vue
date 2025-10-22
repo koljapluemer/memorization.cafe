@@ -168,18 +168,33 @@ onMounted(async () => {
   const progress = await learningProgressRepo.getByLearningItemId(props.flashcard.id!);
   const isNew = !progress || !progress.cardData;
 
+  // Check if already reviewed today (same calendar date)
+  const reviewedToday = progress?.cardData?.last_review
+    ? isSameCalendarDay(new Date(progress.cardData.last_review), new Date())
+    : false;
+
   // Determine practice mode
   if (practiceAsFlashcard && practiceAsPrompt) {
     // Both modes enabled
     if (isNew) {
       // For new flashcards, always use flashcard mode
       practiceMode.value = 'flashcard';
+    } else if (reviewedToday) {
+      // If already reviewed today, only allow flashcard mode (no prompt)
+      practiceMode.value = 'flashcard';
     } else {
-      // For reviewed flashcards, randomly choose
+      // For reviewed flashcards not done today, randomly choose
       practiceMode.value = Math.random() < 0.5 ? 'flashcard' : 'prompt';
     }
   } else if (practiceAsPrompt) {
-    practiceMode.value = 'prompt';
+    // Only prompt mode enabled
+    if (reviewedToday) {
+      // Already did prompt today, skip this card by using flashcard mode
+      // (or we could emit complete immediately, but flashcard mode allows repeated practice)
+      practiceMode.value = 'flashcard';
+    } else {
+      practiceMode.value = 'prompt';
+    }
   } else {
     practiceMode.value = 'flashcard';
   }
@@ -195,6 +210,12 @@ onMounted(async () => {
     isReversed.value = false; // Always front→back when reverse not enabled
   }
 });
+
+function isSameCalendarDay(date1: Date, date2: Date): boolean {
+  return date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate();
+}
 
 function handleDone() {
   if (userResponse.value.trim().length > 0) {

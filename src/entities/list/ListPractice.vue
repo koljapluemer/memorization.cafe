@@ -54,7 +54,12 @@
               <td v-if="list.isOrderedList">
                 {{ index + 1 }}
               </td>
-              <td>{{ userAnswers[index] || '' }}</td>
+              <td>
+                <MarkdownText
+                  v-if="userAnswers[index]"
+                  :text="userAnswers[index]"
+                />
+              </td>
               <td>
                 <label class="flex items-center gap-2">
                   <input
@@ -62,7 +67,7 @@
                     type="checkbox"
                     class="checkbox"
                   >
-                  {{ correctItem }}
+                  <MarkdownText :text="correctItem" />
                 </label>
               </td>
             </tr>
