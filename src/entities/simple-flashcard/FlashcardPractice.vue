@@ -56,7 +56,7 @@
         </div>
         <div
           v-else
-          class="grid grid-cols-2 gap-4"
+          class="flex gap-2 flex-row flex-wrap"
         >
           <div class="border rounded-lg p-4">
             <h4 class="font-semibold mb-2 text-sm">
