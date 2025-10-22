@@ -37,7 +37,7 @@
 
     <!-- Filter FAB -->
     <button
-      class="btn btn-circle btn-primary fixed bottom-4 right-4"
+      class="btn btn-circle btn-primary fixed top-20 right-4"
       aria-label="Filter"
       @click="openFilterModal"
     >
