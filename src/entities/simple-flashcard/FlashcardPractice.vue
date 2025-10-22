@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-4">
-    <div class="flex justify-end">
+    <div class="flex justify-start">
       <button
-        class="btn btn-ghost btn-sm"
+        class="btn btn-xs"
         @click="handleDisable"
       >
-        Disable
+        Disable Exercise
       </button>
     </div>
 
