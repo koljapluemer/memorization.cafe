@@ -9,7 +9,9 @@
 import { onMounted, ref, watch } from 'vue';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
+import markedKatex from 'marked-katex-extension';
 
+marked.use(markedKatex({ throwOnError: false }));
 marked.setOptions({
   breaks: true,
 });
