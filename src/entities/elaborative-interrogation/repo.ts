@@ -4,7 +4,11 @@ import { db, type ElaborativeInterrogationConcept } from '@/app/database';
 import { getRandomItem } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
 
-const ONE_HOUR_MS = 60 * 60 * 1000;
+function isSameCalendarDay(date1: Date, date2: Date): boolean {
+  return date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate();
+}
 
 export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
   async getAll(): Promise<ElaborativeInterrogationConcept[]> {
@@ -37,8 +41,8 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
       const lastAnswer = progress.answers?.[progress.answers.length - 1];
       if (!lastAnswer) return false;
 
-      const timeSinceLastAnswer = now.getTime() - new Date(lastAnswer.timestamp).getTime();
-      return timeSinceLastAnswer >= ONE_HOUR_MS;
+      // Only return concepts that were NOT answered today
+      return !isSameCalendarDay(new Date(lastAnswer.timestamp), now);
     });
 
     return getRandomItem(dueConcepts);
