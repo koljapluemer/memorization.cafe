@@ -7,6 +7,7 @@ import { clozeRepo } from '@/entities/cloze';
 export interface ImportResult {
   success: number;
   failed: number;
+  skipped: number;
   errors: string[];
 }
 
@@ -17,7 +18,10 @@ export async function importFlashcardsFromCsv(
   data: Record<string, string>[],
   collectionId: string
 ): Promise<ImportResult> {
-  const result: ImportResult = { success: 0, failed: 0, errors: [] };
+  const result: ImportResult = { success: 0, failed: 0, skipped: 0, errors: [] };
+
+  // Fetch existing flashcards in this collection
+  const existingFlashcards = await simpleFlashcardRepo.getByCollectionId(collectionId);
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i]!;
@@ -31,8 +35,19 @@ export async function importFlashcardsFromCsv(
         practiceReverse: row.practiceReverse?.toLowerCase() === 'true' ? true : false,
       };
 
-      await simpleFlashcardRepo.create(flashcard);
-      result.success++;
+      // Check for duplicates (same front AND back, case-insensitive)
+      const isDuplicate = existingFlashcards.some(
+        existing =>
+          existing.front.trim().toLowerCase() === flashcard.front.trim().toLowerCase() &&
+          existing.back.trim().toLowerCase() === flashcard.back.trim().toLowerCase()
+      );
+
+      if (isDuplicate) {
+        result.skipped++;
+      } else {
+        await simpleFlashcardRepo.create(flashcard);
+        result.success++;
+      }
     } catch (error) {
       result.failed++;
       result.errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -49,7 +64,10 @@ export async function importConceptsFromCsv(
   data: Record<string, string>[],
   collectionId: string
 ): Promise<ImportResult> {
-  const result: ImportResult = { success: 0, failed: 0, errors: [] };
+  const result: ImportResult = { success: 0, failed: 0, skipped: 0, errors: [] };
+
+  // Fetch existing concepts in this collection
+  const existingConcepts = await elaborativeInterrogationRepo.getByCollectionId(collectionId);
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i]!;
@@ -60,8 +78,17 @@ export async function importConceptsFromCsv(
         description: row.description || undefined,
       };
 
-      await elaborativeInterrogationRepo.create(concept);
-      result.success++;
+      // Check for duplicates (same name, case-insensitive)
+      const isDuplicate = existingConcepts.some(
+        existing => existing.name.trim().toLowerCase() === concept.name.trim().toLowerCase()
+      );
+
+      if (isDuplicate) {
+        result.skipped++;
+      } else {
+        await elaborativeInterrogationRepo.create(concept);
+        result.success++;
+      }
     } catch (error) {
       result.failed++;
       result.errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -78,7 +105,10 @@ export async function importListsFromCsv(
   data: Record<string, string>[],
   collectionId: string
 ): Promise<ImportResult> {
-  const result: ImportResult = { success: 0, failed: 0, errors: [] };
+  const result: ImportResult = { success: 0, failed: 0, skipped: 0, errors: [] };
+
+  // Fetch existing lists in this collection
+  const existingLists = await listRepo.getByCollectionId(collectionId);
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i]!;
@@ -93,8 +123,17 @@ export async function importListsFromCsv(
         note: row.note || undefined,
       };
 
-      await listRepo.create(list);
-      result.success++;
+      // Check for duplicates (same name, case-insensitive)
+      const isDuplicate = existingLists.some(
+        existing => existing.name.trim().toLowerCase() === list.name.trim().toLowerCase()
+      );
+
+      if (isDuplicate) {
+        result.skipped++;
+      } else {
+        await listRepo.create(list);
+        result.success++;
+      }
     } catch (error) {
       result.failed++;
       result.errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -111,7 +150,10 @@ export async function importClozesFromCsv(
   data: Record<string, string>[],
   collectionId: string
 ): Promise<ImportResult> {
-  const result: ImportResult = { success: 0, failed: 0, errors: [] };
+  const result: ImportResult = { success: 0, failed: 0, skipped: 0, errors: [] };
+
+  // Fetch existing clozes in this collection
+  const existingClozes = await clozeRepo.getByCollectionId(collectionId);
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i]!;
@@ -135,8 +177,20 @@ export async function importClozesFromCsv(
         postExercise: row.postExercise || undefined,
       };
 
-      await clozeRepo.create(cloze);
-      result.success++;
+      // Check for duplicates (same content AND same indices array)
+      const isDuplicate = existingClozes.some(existing => {
+        const sameContent = existing.content.trim().toLowerCase() === cloze.content.trim().toLowerCase();
+        const sameIndices = existing.indices.length === cloze.indices.length &&
+          existing.indices.every((val, idx) => val === cloze.indices[idx]);
+        return sameContent && sameIndices;
+      });
+
+      if (isDuplicate) {
+        result.skipped++;
+      } else {
+        await clozeRepo.create(cloze);
+        result.success++;
+      }
     } catch (error) {
       result.failed++;
       result.errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);

@@ -504,13 +504,18 @@ async function handleCsvFileSelected(event: Event) {
 
     // Show result
     const entityName = getEntityDisplayName(importType);
-    if (result.success > 0 && result.failed === 0) {
+    if (result.success > 0 && result.failed === 0 && result.skipped === 0) {
       showToast(`Successfully imported ${result.success} ${entityName}(s)`, 'success');
+    } else if (result.success > 0 && result.failed === 0 && result.skipped > 0) {
+      showToast(`Imported ${result.success} ${entityName}(s), ${result.skipped} skipped (duplicates)`, 'success');
     } else if (result.success > 0 && result.failed > 0) {
+      const skipMsg = result.skipped > 0 ? `, ${result.skipped} skipped (duplicates)` : '';
       showToast(
-        `Imported ${result.success} ${entityName}(s), ${result.failed} failed:\n${result.errors.slice(0, 3).join('\n')}`,
+        `Imported ${result.success} ${entityName}(s)${skipMsg}, ${result.failed} failed:\n${result.errors.slice(0, 3).join('\n')}`,
         'warning'
       );
+    } else if (result.skipped > 0 && result.success === 0) {
+      showToast(`All ${result.skipped} ${entityName}(s) were duplicates (skipped)`, 'info');
     } else {
       showToast(`Import failed:\n${result.errors.slice(0, 3).join('\n')}`, 'error');
     }
