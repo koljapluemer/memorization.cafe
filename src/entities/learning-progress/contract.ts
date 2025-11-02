@@ -19,6 +19,10 @@ export interface LearningProgressContract {
   createEbisuProgress(learningItemId: string, itemType: 'list', initialModel: EbisuModel): Promise<string>;
   updateEbisuProgress(learningItemId: string, model: EbisuModel): Promise<void>;
 
+  // Priority management
+  updatePriority(learningItemId: string, priority: number): Promise<void>;
+  getPriority(learningItemId: string): Promise<number>;
+
   // General queries
   getAllProgressForItems(learningItemIds: string[]): Promise<LearningProgress[]>;
   delete(learningItemId: string): Promise<void>;

@@ -3,8 +3,8 @@ import { State } from 'ts-fsrs';
 import type { ClozeContract } from './contract';
 
 import { db, type Cloze } from '@/app/database';
-import { getRandomItem } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 
 export const clozeRepo: ClozeContract = {
   async getAll(): Promise<Cloze[]> {
@@ -43,7 +43,17 @@ export const clozeRepo: ClozeContract = {
       return dueDate <= now;
     });
 
-    return getRandomItem(dueClozes);
+    // Use weighted selection based on priority
+    const weightedClozes: WeightedItem<Cloze>[] = dueClozes.map((cloze: Cloze) => {
+      const progress = progressRecords.find((p) => p.learningItemId === cloze.id);
+      const priority = progress?.priority ?? 5; // Default to 5 (medium priority)
+      return {
+        item: cloze,
+        weight: priority,
+      };
+    });
+
+    return weightedRandomChoice(weightedClozes);
   },
 
   async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<Cloze | null> {
@@ -53,7 +63,14 @@ export const clozeRepo: ClozeContract = {
       .toArray();
 
     const newClozes = allClozes.filter((c: Cloze) => !existingProgressIds.includes(c.id!));
-    return getRandomItem(newClozes);
+
+    // For new items without progress, default all to priority 5
+    const weightedClozes: WeightedItem<Cloze>[] = newClozes.map((cloze: Cloze) => ({
+      item: cloze,
+      weight: 5, // Default priority for new items
+    }));
+
+    return weightedRandomChoice(weightedClozes);
   },
 
   async create(data: Omit<Cloze, 'id'>): Promise<string> {

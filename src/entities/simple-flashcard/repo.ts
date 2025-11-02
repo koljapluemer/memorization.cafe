@@ -1,8 +1,8 @@
 import type { SimpleFlashcardContract } from './contract';
 
 import { db, type SimpleFlashcard } from '@/app/database';
-import { getRandomItem } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 
 export const simpleFlashcardRepo: SimpleFlashcardContract = {
   async getAll(): Promise<SimpleFlashcard[]> {
@@ -37,7 +37,17 @@ export const simpleFlashcardRepo: SimpleFlashcardContract = {
       return progress.cardData.due <= now;
     });
 
-    return getRandomItem(dueFlashcards);
+    // Use weighted selection based on priority
+    const weightedFlashcards: WeightedItem<SimpleFlashcard>[] = dueFlashcards.map((flashcard: SimpleFlashcard) => {
+      const progress = progressRecords.find((p: { learningItemId: string }) => p.learningItemId === flashcard.id);
+      const priority = progress?.priority ?? 5; // Default to 5 (medium priority)
+      return {
+        item: flashcard,
+        weight: priority,
+      };
+    });
+
+    return weightedRandomChoice(weightedFlashcards);
   },
 
   async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<SimpleFlashcard | null> {
@@ -48,7 +58,14 @@ export const simpleFlashcardRepo: SimpleFlashcardContract = {
 
     // Filter out disabled flashcards and those with existing progress
     const newFlashcards = allFlashcards.filter((f: SimpleFlashcard) => !f.isDisabled && !existingProgressIds.includes(f.id!));
-    return getRandomItem(newFlashcards);
+
+    // For new items without progress, default all to priority 5
+    const weightedFlashcards: WeightedItem<SimpleFlashcard>[] = newFlashcards.map((flashcard: SimpleFlashcard) => ({
+      item: flashcard,
+      weight: 5, // Default priority for new items
+    }));
+
+    return weightedRandomChoice(weightedFlashcards);
   },
 
   async create(data: Omit<SimpleFlashcard, 'id'>): Promise<string> {

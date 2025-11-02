@@ -96,27 +96,67 @@
         </div>
       </div>
     </div>
+
+    <div class="form-control w-full">
+      <label
+        for="priority"
+        class="label"
+      >
+        <span class="label-text">Priority (1-10)</span>
+        <span class="label-text-alt text-gray-500">Higher = appears more often</span>
+      </label>
+      <input
+        id="priority"
+        v-model.number="localPriority"
+        type="range"
+        min="1"
+        max="10"
+        class="range range-primary w-full"
+        step="1"
+      >
+      <div class="flex w-full justify-between px-2 text-xs">
+        <span>1</span>
+        <span>2</span>
+        <span>3</span>
+        <span>4</span>
+        <span>5</span>
+        <span>6</span>
+        <span>7</span>
+        <span>8</span>
+        <span>9</span>
+        <span>10</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 
 import type { List } from '@/app/database';
 import { shuffleArray } from '@/dumb/array-utils';
+import { learningProgressRepo } from '@/entities/learning-progress';
 
 const props = defineProps<{
   list?: List;
 }>();
 
 const emit = defineEmits<{
-  update: [data: { name: string; items: string[]; isOrderedList: boolean; note?: string }];
+  update: [data: { name: string; items: string[]; isOrderedList: boolean; note?: string; priority: number }];
 }>();
 
 const localName = ref(props.list?.name || '');
 const localItems = ref<string[]>([...(props.list?.items || []), '']);
 const localIsOrderedList = ref(props.list?.isOrderedList ?? false);
 const localNote = ref(props.list?.note || '');
+const localPriority = ref(5);
+
+onMounted(async () => {
+  // Load priority from learning progress if list exists
+  if (props.list?.id) {
+    localPriority.value = await learningProgressRepo.getPriority(props.list.id);
+  }
+});
 
 function handleItemChange() {
   // Always ensure there's one empty item at the end
@@ -167,10 +207,11 @@ function emitUpdate() {
     items: nonEmptyItems,
     isOrderedList: localIsOrderedList.value,
     note: localNote.value || undefined,
+    priority: localPriority.value,
   });
 }
 
-watch([localName, localIsOrderedList, localNote], () => {
+watch([localName, localIsOrderedList, localNote, localPriority], () => {
   emitUpdate();
 });
 </script>

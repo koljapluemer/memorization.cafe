@@ -93,6 +93,18 @@ export const learningProgressRepo: LearningProgressContract = {
     }
   },
 
+  async updatePriority(learningItemId: string, priority: number): Promise<void> {
+    const existing = await this.getByLearningItemId(learningItemId);
+    if (existing?.id) {
+      await db.learningProgress.update(existing.id, { priority });
+    }
+  },
+
+  async getPriority(learningItemId: string): Promise<number> {
+    const progress = await this.getByLearningItemId(learningItemId);
+    return progress?.priority ?? 5; // Default to 5 (medium priority)
+  },
+
   async delete(learningItemId: string): Promise<void> {
     const existing = await this.getByLearningItemId(learningItemId);
     if (existing?.id) {

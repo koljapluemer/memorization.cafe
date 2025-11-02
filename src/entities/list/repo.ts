@@ -3,8 +3,8 @@ import * as ebisu from 'ebisu-js';
 import type { ListContract } from './contract';
 
 import { db, type List } from '@/app/database';
-import { getRandomItem } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 
 const RECALL_THRESHOLD = 0.9;
 
@@ -43,7 +43,17 @@ export const listRepo: ListContract = {
       return recallProbability < RECALL_THRESHOLD;
     });
 
-    return getRandomItem(dueLists);
+    // Use weighted selection based on priority
+    const weightedLists: WeightedItem<List>[] = dueLists.map((list: List) => {
+      const progress = progressRecords.find((p) => p.learningItemId === list.id);
+      const priority = progress?.priority ?? 5; // Default to 5 (medium priority)
+      return {
+        item: list,
+        weight: priority,
+      };
+    });
+
+    return weightedRandomChoice(weightedLists);
   },
 
   async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<List | null> {
@@ -53,7 +63,14 @@ export const listRepo: ListContract = {
       .toArray();
 
     const newLists = allLists.filter((l: List) => !existingProgressIds.includes(l.id!));
-    return getRandomItem(newLists);
+
+    // For new items without progress, default all to priority 5
+    const weightedLists: WeightedItem<List>[] = newLists.map((list: List) => ({
+      item: list,
+      weight: 5, // Default priority for new items
+    }));
+
+    return weightedRandomChoice(weightedLists);
   },
 
   async create(data: Omit<List, 'id'>): Promise<string> {

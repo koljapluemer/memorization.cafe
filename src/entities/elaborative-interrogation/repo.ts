@@ -1,8 +1,8 @@
 import type { ElaborativeInterrogationContract } from './contract';
 
 import { db, type ElaborativeInterrogationConcept } from '@/app/database';
-import { getRandomItem } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 
 function isSameCalendarDay(date1: Date, date2: Date): boolean {
   return date1.getFullYear() === date2.getFullYear() &&
@@ -45,7 +45,17 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
       return !isSameCalendarDay(new Date(lastAnswer.timestamp), now);
     });
 
-    return getRandomItem(dueConcepts);
+    // Use weighted selection based on priority
+    const weightedConcepts: WeightedItem<ElaborativeInterrogationConcept>[] = dueConcepts.map((concept: ElaborativeInterrogationConcept) => {
+      const progress = progressRecords.find((p) => p.learningItemId === concept.id);
+      const priority = progress?.priority ?? 5; // Default to 5 (medium priority)
+      return {
+        item: concept,
+        weight: priority,
+      };
+    });
+
+    return weightedRandomChoice(weightedConcepts);
   },
 
   async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<ElaborativeInterrogationConcept | null> {
@@ -55,7 +65,14 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
       .toArray();
 
     const newConcepts = allConcepts.filter((c: ElaborativeInterrogationConcept) => !existingProgressIds.includes(c.id!));
-    return getRandomItem(newConcepts);
+
+    // For new items without progress, default all to priority 5
+    const weightedConcepts: WeightedItem<ElaborativeInterrogationConcept>[] = newConcepts.map((concept: ElaborativeInterrogationConcept) => ({
+      item: concept,
+      weight: 5, // Default priority for new items
+    }));
+
+    return weightedRandomChoice(weightedConcepts);
   },
 
   async create(data: Omit<ElaborativeInterrogationConcept, 'id'>): Promise<string> {

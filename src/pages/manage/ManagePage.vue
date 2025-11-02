@@ -106,6 +106,7 @@ import { elaborativeInterrogationRepo } from '@/entities/elaborative-interrogati
 import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
 import { listRepo } from '@/entities/list';
 import { clozeRepo } from '@/entities/cloze';
+import { learningProgressRepo } from '@/entities/learning-progress';
 import { useToast } from '@/app/toast';
 
 const collections = ref<Collection[]>([]);
@@ -326,34 +327,45 @@ async function handleSaveItem(data: unknown) {
   // Convert reactive Proxy to plain object for Dexie
   const plainData = JSON.parse(JSON.stringify(data));
 
+  // Extract priority from data (it's not part of the item schema)
+  const priority = (plainData as { priority?: number }).priority;
+  delete (plainData as { priority?: number }).priority;
+
   const itemData = {
     ...plainData,
     collectionId: activeTabId.value,
   };
 
+  let itemId: string | undefined;
+
   if (isNewItem.value) {
     if (editingItemType.value === 'flashcard') {
-      await simpleFlashcardRepo.create(itemData as Omit<SimpleFlashcard, 'id'>);
+      itemId = await simpleFlashcardRepo.create(itemData as Omit<SimpleFlashcard, 'id'>);
     } else if (editingItemType.value === 'concept') {
-      await elaborativeInterrogationRepo.create(itemData as Omit<ElaborativeInterrogationConcept, 'id'>);
+      itemId = await elaborativeInterrogationRepo.create(itemData as Omit<ElaborativeInterrogationConcept, 'id'>);
     } else if (editingItemType.value === 'list') {
-      await listRepo.create(itemData as Omit<List, 'id'>);
+      itemId = await listRepo.create(itemData as Omit<List, 'id'>);
     } else if (editingItemType.value === 'cloze') {
-      await clozeRepo.create(itemData as Omit<Cloze, 'id'>);
+      itemId = await clozeRepo.create(itemData as Omit<Cloze, 'id'>);
     }
   } else {
-    const id = (editingItem.value as { id?: string })?.id;
-    if (id) {
+    itemId = (editingItem.value as { id?: string })?.id;
+    if (itemId) {
       if (editingItemType.value === 'flashcard') {
-        await simpleFlashcardRepo.update(id, plainData as Partial<SimpleFlashcard>);
+        await simpleFlashcardRepo.update(itemId, plainData as Partial<SimpleFlashcard>);
       } else if (editingItemType.value === 'concept') {
-        await elaborativeInterrogationRepo.update(id, plainData as Partial<ElaborativeInterrogationConcept>);
+        await elaborativeInterrogationRepo.update(itemId, plainData as Partial<ElaborativeInterrogationConcept>);
       } else if (editingItemType.value === 'list') {
-        await listRepo.update(id, plainData as Partial<List>);
+        await listRepo.update(itemId, plainData as Partial<List>);
       } else if (editingItemType.value === 'cloze') {
-        await clozeRepo.update(id, plainData as Partial<Cloze>);
+        await clozeRepo.update(itemId, plainData as Partial<Cloze>);
       }
     }
+  }
+
+  // Save priority to learning progress if provided and we have an item ID
+  if (itemId && priority !== undefined) {
+    await learningProgressRepo.updatePriority(itemId, priority);
   }
 
   await loadLearningItems();

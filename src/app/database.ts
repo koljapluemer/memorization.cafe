@@ -68,6 +68,7 @@ export interface LearningProgress {
   itemType: 'flashcard' | 'concept' | 'list' | 'cloze';
   owner?: string; // Current user ID (keeps progress private)
   realmId?: string; // User's private realm
+  priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 
   // For flashcards (ts-fsrs Card data)
   cardData?: Card;
@@ -139,6 +140,16 @@ export class MemorizationDatabase extends Dexie {
       lists: '@id, collectionId, name',
       clozes: '@id, collectionId',
       learningProgress: '@id, learningItemId, itemType, owner',
+      questionLists: '@id, name, isDefault',
+    });
+
+    this.version(6).stores({
+      collections: '@id, name',
+      flashcards: '@id, collectionId, isDisabled',
+      concepts: '@id, collectionId, name',
+      lists: '@id, collectionId, name',
+      clozes: '@id, collectionId',
+      learningProgress: '@id, learningItemId, itemType, owner, priority',
       questionLists: '@id, name, isDefault',
     });
 

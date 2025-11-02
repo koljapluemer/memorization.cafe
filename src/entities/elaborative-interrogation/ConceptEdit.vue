@@ -52,6 +52,37 @@
         </option>
       </select>
     </div>
+
+    <div class="form-control w-full">
+      <label
+        for="priority"
+        class="label"
+      >
+        <span class="label-text">Priority (1-10)</span>
+        <span class="label-text-alt text-gray-500">Higher = appears more often</span>
+      </label>
+      <input
+        id="priority"
+        v-model.number="localPriority"
+        type="range"
+        min="1"
+        max="10"
+        class="range range-primary w-full"
+        step="1"
+      >
+      <div class="flex w-full justify-between px-2 text-xs">
+        <span>1</span>
+        <span>2</span>
+        <span>3</span>
+        <span>4</span>
+        <span>5</span>
+        <span>6</span>
+        <span>7</span>
+        <span>8</span>
+        <span>9</span>
+        <span>10</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -61,18 +92,20 @@ import { ref, watch, onMounted } from 'vue';
 import type { ElaborativeInterrogationConcept } from '@/app/database';
 import { questionListRepo } from '@/entities/question-list';
 import type { QuestionList } from '@/entities/question-list';
+import { learningProgressRepo } from '@/entities/learning-progress';
 
 const props = defineProps<{
   concept?: ElaborativeInterrogationConcept;
 }>();
 
 const emit = defineEmits<{
-  update: [data: { name: string; description?: string; questionListId?: string }];
+  update: [data: { name: string; description?: string; questionListId?: string; priority: number }];
 }>();
 
 const localName = ref(props.concept?.name || '');
 const localDescription = ref(props.concept?.description || '');
 const localQuestionListId = ref<string | undefined>(props.concept?.questionListId);
+const localPriority = ref(5);
 const questionLists = ref<QuestionList[]>([]);
 
 onMounted(async () => {
@@ -85,13 +118,19 @@ onMounted(async () => {
       localQuestionListId.value = defaultList.id;
     }
   }
+
+  // Load priority from learning progress if concept exists
+  if (props.concept?.id) {
+    localPriority.value = await learningProgressRepo.getPriority(props.concept.id);
+  }
 });
 
-watch([localName, localDescription, localQuestionListId], () => {
+watch([localName, localDescription, localQuestionListId, localPriority], () => {
   emit('update', {
     name: localName.value,
     description: localDescription.value || undefined,
     questionListId: localQuestionListId.value,
+    priority: localPriority.value,
   });
 });
 </script>
