@@ -5,21 +5,25 @@
         v-if="currentItemType === 'flashcard'"
         :flashcard="currentItem as SimpleFlashcard"
         @complete="loadNextItem"
+        @edit="handleEdit"
       />
       <ElaborativeInterrogationPractice
         v-else-if="currentItemType === 'concept'"
         :concept="currentItem as ElaborativeInterrogationConcept"
         @complete="loadNextItem"
+        @edit="handleEdit"
       />
       <ListPractice
         v-else-if="currentItemType === 'list'"
         :list="currentItem as List"
         @complete="loadNextItem"
+        @edit="handleEdit"
       />
       <ClozePractice
         v-else-if="currentItemType === 'cloze'"
         :cloze="currentItem as Cloze"
         @complete="loadNextItem"
+        @edit="handleEdit"
       />
     </div>
 
@@ -50,6 +54,15 @@
       :current-filters="filters"
       @apply="handleFilterApply"
     />
+
+    <LearningItemEditModal
+      v-if="currentItem && currentItemType"
+      ref="editModalRef"
+      :item-type="currentItemType"
+      :item="currentItem"
+      :is-new="false"
+      @save="handleSaveEdit"
+    />
   </div>
 </template>
 
@@ -59,6 +72,7 @@ import { Filter } from 'lucide-vue-next';
 
 import FilterModal from './FilterModal.vue';
 import { loadFilters, saveFilters, type PracticeFilters } from './filter-storage';
+import LearningItemEditModal from '@/pages/manage/LearningItemEditModal.vue';
 
 import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
 import { collectionRepo, type Collection } from '@/entities/collection';
@@ -73,6 +87,7 @@ import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random'
 const collections = ref<Collection[]>([]);
 const filters = ref<PracticeFilters>(loadFilters());
 const filterModalRef = ref<InstanceType<typeof FilterModal> | null>(null);
+const editModalRef = ref<InstanceType<typeof LearningItemEditModal> | null>(null);
 
 const flashcards = ref<SimpleFlashcard[]>([]);
 const concepts = ref<ElaborativeInterrogationConcept[]>([]);
@@ -494,6 +509,58 @@ function handleFilterApply(newFilters: PracticeFilters) {
   filters.value = newFilters;
   saveFilters(newFilters);
   loadNextItem();
+}
+
+function handleEdit() {
+  editModalRef.value?.open();
+}
+
+async function handleSaveEdit(data: unknown) {
+  if (!currentItem.value?.id || !currentItemType.value) return;
+
+  // Convert reactive Proxy to plain object
+  const plainData = JSON.parse(JSON.stringify(data));
+
+  // Extract priority from data (it's not part of the item schema)
+  const priority = (plainData as { priority?: number }).priority;
+  delete (plainData as { priority?: number }).priority;
+
+  // Update item based on type
+  if (currentItemType.value === 'flashcard') {
+    await simpleFlashcardRepo.update(currentItem.value.id, plainData as Partial<SimpleFlashcard>);
+  } else if (currentItemType.value === 'concept') {
+    await elaborativeInterrogationRepo.update(currentItem.value.id, plainData as Partial<ElaborativeInterrogationConcept>);
+  } else if (currentItemType.value === 'list') {
+    await listRepo.update(currentItem.value.id, plainData as Partial<List>);
+  } else if (currentItemType.value === 'cloze') {
+    await clozeRepo.update(currentItem.value.id, plainData as Partial<Cloze>);
+  }
+
+  // Save priority to learning progress if provided
+  if (priority !== undefined) {
+    await learningProgressRepo.updatePriority(currentItem.value.id, priority);
+  }
+
+  // Reload current item to reflect changes (don't advance to next)
+  await reloadCurrentItem();
+}
+
+async function reloadCurrentItem() {
+  if (!currentItem.value?.id || !currentItemType.value) return;
+
+  if (currentItemType.value === 'flashcard') {
+    const updated = await simpleFlashcardRepo.getById(currentItem.value.id);
+    if (updated) currentItem.value = updated;
+  } else if (currentItemType.value === 'concept') {
+    const updated = await elaborativeInterrogationRepo.getById(currentItem.value.id);
+    if (updated) currentItem.value = updated;
+  } else if (currentItemType.value === 'list') {
+    const updated = await listRepo.getById(currentItem.value.id);
+    if (updated) currentItem.value = updated;
+  } else if (currentItemType.value === 'cloze') {
+    const updated = await clozeRepo.getById(currentItem.value.id);
+    if (updated) currentItem.value = updated;
+  }
 }
 </script>
 

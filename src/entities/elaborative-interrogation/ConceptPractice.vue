@@ -1,8 +1,17 @@
 <template>
   <div class="space-y-4">
-    <h2 class="text-2xl font-bold">
-      {{ concept.name }}
-    </h2>
+    <div class="flex justify-between items-start">
+      <h2 class="text-2xl font-bold">
+        {{ concept.name }}
+      </h2>
+      <button
+        class="btn btn-xs btn-ghost gap-1"
+        @click="emit('edit')"
+      >
+        <Pencil :size="14" />
+        Edit
+      </button>
+    </div>
 
     <MarkdownText
       v-if="concept.description"
@@ -36,6 +45,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { Pencil } from 'lucide-vue-next';
 
 import type { ElaborativeInterrogationConcept } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
@@ -50,6 +60,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   complete: [];
+  edit: [];
 }>();
 
 const selectedQuestion = ref('');

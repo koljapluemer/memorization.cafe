@@ -1,11 +1,18 @@
 <template>
   <div class="space-y-4">
-    <div class="flex justify-start">
+    <div class="flex justify-between">
       <button
         class="btn btn-xs"
         @click="handleDisable"
       >
         Disable Exercise
+      </button>
+      <button
+        class="btn btn-xs btn-ghost gap-1"
+        @click="emit('edit')"
+      >
+        <Pencil :size="14" />
+        Edit
       </button>
     </div>
 
@@ -123,7 +130,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { fsrs, Rating, createEmptyCard } from 'ts-fsrs';
-import { Check } from 'lucide-vue-next';
+import { Check, Pencil } from 'lucide-vue-next';
 
 import type { SimpleFlashcard } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
@@ -136,6 +143,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   complete: [];
+  edit: [];
 }>();
 
 const revealed = ref(false);

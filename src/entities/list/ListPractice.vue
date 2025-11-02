@@ -1,6 +1,15 @@
 <template>
   <div class="space-y-4">
-    <MarkdownText :text="list.name" />
+    <div class="flex justify-between items-start">
+      <MarkdownText :text="list.name" />
+      <button
+        class="btn btn-xs btn-ghost gap-1"
+        @click="emit('edit')"
+      >
+        <Pencil :size="14" />
+        Edit
+      </button>
+    </div>
 
     <template v-if="!revealed">
       <div class="form-control w-full">
@@ -101,6 +110,7 @@
 import { ref } from 'vue';
 import * as ebisu from 'ebisu-js';
 import type { Model as EbisuModel } from 'ebisu-js';
+import { Pencil } from 'lucide-vue-next';
 
 import type { List } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
@@ -112,6 +122,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   complete: [];
+  edit: [];
 }>();
 
 const revealed = ref(false);
