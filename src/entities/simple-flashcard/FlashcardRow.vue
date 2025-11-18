@@ -5,13 +5,18 @@
       :size="14"
       class="inline mr-1"
     />
+    <Image
+      v-if="hasImage"
+      :size="14"
+      class="inline mr-1"
+    />
     {{ truncatedFront }} | {{ truncatedBack }}
   </span>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { CircleSlash } from 'lucide-vue-next';
+import { CircleSlash, Image } from 'lucide-vue-next';
 
 import type { SimpleFlashcard } from '@/app/database';
 
@@ -25,4 +30,5 @@ function truncate(text: string, maxLength: number = 20): string {
 
 const truncatedFront = computed(() => truncate(props.flashcard.front));
 const truncatedBack = computed(() => truncate(props.flashcard.back));
+const hasImage = computed(() => Boolean(props.flashcard.frontImage || props.flashcard.backImage));
 </script>

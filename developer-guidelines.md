@@ -1,7 +1,3 @@
-You see here a basic vite-vue-ts app, freshly generated. Let's build an MVP.
-
-This should become an app for various memorization/learning flows.
-
 ## Essential Tech Stack
 
 - dexie with dexie-cloud (one db per user, cloud sync optional)
@@ -32,34 +28,39 @@ Instead, use the following folder structure (inspired by Feature-Sliced Design)
 - Keep copy and micro-copy short and to the point. Avoid waffling, avoid marketing speak, and avoid labelling everything with triple redundancy.
 - make sure UI looks neat. Always put a form input BELOW the label in a new line. Responsive design.
 
-## MVP Features
+## UI Design
 
-Define a global header in `app/` with a nav allowing to go to these pages.
+- Use Tailwind and Daisy.UI components
+- Understand [App.vue](src/app/App.vue): Note that the router view is already wrapped with a container and a flex layout. Do not wrap a page into another container or flex layout for no reason.
+- In general (barring special cases where it makes no sense), every page should have a `h1` on top
+- Do not add classes to headings
+- Use wrapping components and especially cards sparingly, and only when needed.
+- When using a card, give it classes `card` and `shadow`. Nothing else. No variation unless called for.
+- If a card must have an hover effect because it's clickable, give it `transition-hover` and `hover:shadow-md`
+- A `card` always must have a `card-body` where the content lives (this is Daisy UI syntax)
+- A `card-title`, if existing, must be within `card-body`
+- Prefer clean `grid` and `flex` layouts over `space-*`
+- Use standard buttons unless special case calls for customization. Do not vary the size randomly unless called for
+- Do not use gray text. If text must be dis-emphasized, use only and consistently `text-light`. Do not give it an `sm` size.
+- Do not use excessive subheadings, redundant labels or little information widgets that the user does not care about. 
+- Before implementing a component, look for similar components and copy their styles and/or approach.
+- When setting margins, paddings, gaps and so on, prefer the size `1`, `2`, `4`, and `6`
+- For recurring complex styles, use `@apply` in `App.vue`.
+- User color sparingly, and only for primary/important elements or those that must use color to communicate (e.g. a warning)
+- Make sure any given layout works well on mobile and desktop!
 
-### Settings
+- Use this pattern for form inputs:
 
-Allow setting up dexie cloud sync.
+```
+<fieldset class="fieldset">
+  <label for="page-title" class="label">Page title</label>
+  <input
+    type="text"
+    name="page-title"
+    class="input"
+    placeholder="My awesome page"
+  />
+</fieldset>
+```
 
-### Dashboard
-
-A neat little overview showing the user the different learn modes/techniques they can do on this page.
-
-### Basic Flashcards
-
-- allow CRUD operations (including reasonable list view using a dexie table) for a basic flashcard entity
-- `Flashcard` has front and back, essentially
-- front and back are edited via just textareas, but intepreted/rendered as markdown
-- install `ts-fsrs` and use it for a queue/learn feature, where the user can practice their flashcards:
-  - check for due flashcards first, only if none, pick an unseen/new flashcard
-  - show front and a reveal button, after reveal show front+back and a row with the fsrs buttons
-  - make sure to understand the ACtUAL, latest, non-hallucinated version of ts-fsrs
-  - use a state machine for the queue
-
-### Verbatim Memorization
-
-- allow CRUD and list view for an entity VerbatimItem
-- Verbatim item has 3 core fields: preExercise, toMemorize*, postExercise (all three text areas, interpreted as markdown)
-- make a similar queue as described above, using ts-fsrs also
-  - generate a cloze exercise, replacing a random word from `toMemorize` with '＿＿'
-  - show preExercise (if exists) and the clozed exercise, and "reveal"
-  - after reveal, show preExercise, the complete exercise with the previously clozed part pragmatically marked, and the score buttons
+- KEEP. IT. SIMPLE.

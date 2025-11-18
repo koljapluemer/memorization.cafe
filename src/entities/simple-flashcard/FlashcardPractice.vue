@@ -9,10 +9,40 @@
     @filter="emit('filter')"
   >
     <template #exercise>
+      <div
+        v-if="currentQuestionImage"
+        class="mb-4"
+      >
+        <img
+          :src="currentQuestionImage"
+          class="max-w-sm rounded"
+        >
+        <MarkdownText
+          v-if="currentQuestionImageLabel"
+          :text="currentQuestionImageLabel"
+          class="text-light mt-1"
+        />
+      </div>
+
       <MarkdownText :text="currentQuestion" />
 
       <template v-if="revealed">
         <div class="divider" />
+
+        <div
+          v-if="currentAnswerImage"
+          class="mb-4"
+        >
+          <img
+            :src="currentAnswerImage"
+            class="max-w-sm rounded"
+          >
+          <MarkdownText
+            v-if="currentAnswerImageLabel"
+            :text="currentAnswerImageLabel"
+            class="text-light mt-1"
+          />
+        </div>
 
         <div
           v-if="practiceMode === 'prompt' && userResponse.trim().length > 0"
@@ -160,6 +190,22 @@ const currentQuestion = computed(() =>
 
 const currentAnswer = computed(() =>
   isReversed.value ? props.flashcard.front : props.flashcard.back
+);
+
+const currentQuestionImage = computed(() =>
+  isReversed.value ? props.flashcard.backImage : props.flashcard.frontImage
+);
+
+const currentQuestionImageLabel = computed(() =>
+  isReversed.value ? props.flashcard.backImageLabel : props.flashcard.frontImageLabel
+);
+
+const currentAnswerImage = computed(() =>
+  isReversed.value ? props.flashcard.frontImage : props.flashcard.backImage
+);
+
+const currentAnswerImageLabel = computed(() =>
+  isReversed.value ? props.flashcard.frontImageLabel : props.flashcard.backImageLabel
 );
 
 const answersMatch = computed(() => {

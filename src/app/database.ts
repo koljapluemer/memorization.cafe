@@ -23,6 +23,10 @@ export interface SimpleFlashcard {
   isDisabled?: boolean;
   realmId?: string;
   minimumInterval?: Duration;
+  frontImage?: string;
+  frontImageLabel?: string;
+  backImage?: string;
+  backImageLabel?: string;
 }
 
 export interface ElaborativeInterrogationConcept {

@@ -36,6 +36,10 @@ export async function importFlashcardsFromCsv(
         minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
           ? (row.minimumInterval as Duration)
           : undefined,
+        frontImage: row.frontImage || undefined,
+        frontImageLabel: row.frontImageLabel || undefined,
+        backImage: row.backImage || undefined,
+        backImageLabel: row.backImageLabel || undefined,
       };
 
       // Check for duplicates (same front AND back, case-insensitive)
