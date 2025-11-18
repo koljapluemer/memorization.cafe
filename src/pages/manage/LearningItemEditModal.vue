@@ -38,6 +38,13 @@
 
       <div class="modal-action">
         <button
+          v-if="isNew"
+          class="btn"
+          @click="handleSaveAndAddAnother"
+        >
+          Save & Add Another
+        </button>
+        <button
           class="btn btn-primary"
           @click="handleSave"
         >
@@ -108,6 +115,13 @@ function handleUpdate(data: unknown) {
 function handleSave() {
   emit('save', localData.value);
   close();
+}
+
+function handleSaveAndAddAnother() {
+  emit('save', localData.value);
+  // Reset form state without closing modal
+  localData.value = {};
+  componentKey.value++; // Force component to remount with fresh state
 }
 
 defineExpose({ open });
