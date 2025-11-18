@@ -8,11 +8,13 @@ export interface FlashcardCsvRow {
   practiceAsFlashcard: string;
   practiceAsPrompt: string;
   practiceReverse: string;
+  minimumInterval: string;
 }
 
 export interface ConceptCsvRow {
   name: string;
   description: string;
+  minimumInterval: string;
 }
 
 export interface ListCsvRow {
@@ -20,6 +22,7 @@ export interface ListCsvRow {
   items: string;
   isOrderedList: string;
   note: string;
+  minimumInterval: string;
 }
 
 export interface ClozeCsvRow {
@@ -28,6 +31,7 @@ export interface ClozeCsvRow {
   indices: string;
   preExercise: string;
   postExercise: string;
+  minimumInterval: string;
 }
 
 /**
@@ -36,28 +40,28 @@ export interface ClozeCsvRow {
 export function generateExampleCsv(type: EntityType): string {
   switch (type) {
     case 'flashcard':
-      return `front,back,practiceAsFlashcard,practiceAsPrompt,practiceReverse
-"What is the capital of France?","Paris",true,false,false
-"Translate 'hello' to Spanish","hola",true,true,true
-"2 + 2 = ?","4",false,true,false`;
+      return `front,back,practiceAsFlashcard,practiceAsPrompt,practiceReverse,minimumInterval
+"What is the capital of France?","Paris",true,false,false,
+"Translate 'hello' to Spanish","hola",true,true,true,DAY
+"2 + 2 = ?","4",false,true,false,WEEK`;
 
     case 'concept':
-      return `name,description
-"Photosynthesis","The process by which plants convert sunlight into energy"
-"Mitosis","Cell division resulting in two identical daughter cells"
-"Democracy","A system of government by the whole population through elected representatives"`;
+      return `name,description,minimumInterval
+"Photosynthesis","The process by which plants convert sunlight into energy",WEEK
+"Mitosis","Cell division resulting in two identical daughter cells",WEEK
+"Democracy","A system of government by the whole population through elected representatives",MONTH`;
 
     case 'list':
-      return `name,items,isOrderedList,note
-"Planets","Mercury|Venus|Earth|Mars|Jupiter|Saturn|Uranus|Neptune",true,"In order from the sun"
-"Primary Colors","Red|Blue|Yellow",false,"Mix these to create other colors"
-"Steps to Brew Coffee","Grind beans|Heat water|Add grounds|Pour water|Wait|Pour",true,""`;
+      return `name,items,isOrderedList,note,minimumInterval
+"Planets","Mercury|Venus|Earth|Mars|Jupiter|Saturn|Uranus|Neptune",true,"In order from the sun",DAY
+"Primary Colors","Red|Blue|Yellow",false,"Mix these to create other colors",DAY
+"Steps to Brew Coffee","Grind beans|Heat water|Add grounds|Pour water|Wait|Pour",true,"",WEEK`;
 
     case 'cloze':
-      return `content,clozeStrategy,indices,preExercise,postExercise
-"The quick brown fox jumps over the lazy dog",atSpace,"[2,4,8]","Fill in the blanks:",""
-"photosynthesis",atEveryCharacter,"[0,1,2,3,4]","Complete the word:","This process occurs in plants"
-"H2O is the chemical formula for water",atSpace,"[0,6]","","What do these represent?"`;
+      return `content,clozeStrategy,indices,preExercise,postExercise,minimumInterval
+"The quick brown fox jumps over the lazy dog",atSpace,"[2,4,8]","Fill in the blanks:","",
+"photosynthesis",atEveryCharacter,"[0,1,2,3,4]","Complete the word:","This process occurs in plants",DAY
+"H2O is the chemical formula for water",atSpace,"[0,6]","","What do these represent?",WEEK`;
 
     default:
       return '';
@@ -136,6 +140,9 @@ export function validateCsvData(type: EntityType, data: Record<string, string>[]
         if (row.practiceReverse && !['true', 'false', ''].includes(row.practiceReverse.toLowerCase())) {
           errors.push(`Row ${index + 2}: 'practiceReverse' must be 'true' or 'false'`);
         }
+        if (row.minimumInterval && row.minimumInterval.trim() && !['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)) {
+          errors.push(`Row ${index + 2}: 'minimumInterval' must be one of: HOUR, DAY, TWO_DAYS, WEEK, MONTH (or empty)`);
+        }
       });
       break;
 
@@ -143,6 +150,9 @@ export function validateCsvData(type: EntityType, data: Record<string, string>[]
       data.forEach((row, index) => {
         if (!row.name?.trim()) {
           errors.push(`Row ${index + 2}: 'name' is required`);
+        }
+        if (row.minimumInterval && row.minimumInterval.trim() && !['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)) {
+          errors.push(`Row ${index + 2}: 'minimumInterval' must be one of: HOUR, DAY, TWO_DAYS, WEEK, MONTH (or empty)`);
         }
       });
       break;
@@ -157,6 +167,9 @@ export function validateCsvData(type: EntityType, data: Record<string, string>[]
         }
         if (row.isOrderedList && !['true', 'false', ''].includes(row.isOrderedList.toLowerCase())) {
           errors.push(`Row ${index + 2}: 'isOrderedList' must be 'true' or 'false'`);
+        }
+        if (row.minimumInterval && row.minimumInterval.trim() && !['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)) {
+          errors.push(`Row ${index + 2}: 'minimumInterval' must be one of: HOUR, DAY, TWO_DAYS, WEEK, MONTH (or empty)`);
         }
       });
       break;
@@ -182,6 +195,9 @@ export function validateCsvData(type: EntityType, data: Record<string, string>[]
           } catch {
             errors.push(`Row ${index + 2}: 'indices' must be valid JSON array`);
           }
+        }
+        if (row.minimumInterval && row.minimumInterval.trim() && !['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)) {
+          errors.push(`Row ${index + 2}: 'minimumInterval' must be one of: HOUR, DAY, TWO_DAYS, WEEK, MONTH (or empty)`);
         }
       });
       break;

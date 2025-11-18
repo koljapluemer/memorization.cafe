@@ -1,109 +1,107 @@
 <template>
-  <div class="space-y-4">
-    <div class="flex justify-between">
-      <button
-        class="btn btn-xs"
-        @click="handleDisable"
-      >
-        Disable Exercise
-      </button>
-      <button
-        class="btn btn-xs btn-ghost gap-1"
-        @click="emit('edit')"
-      >
-        <Pencil :size="14" />
-        Edit
-      </button>
-    </div>
+  <PracticeLayout
+    :show-disable="true"
+    :is-disabled="flashcard.isDisabled"
+    @skip="emit('skip')"
+    @edit="emit('edit')"
+    @delete="emit('delete')"
+    @disable="emit('disable')"
+    @filter="emit('filter')"
+  >
+    <template #exercise>
+      <MarkdownText :text="currentQuestion" />
 
-    <MarkdownText :text="currentQuestion" />
+      <template v-if="revealed">
+        <div class="divider" />
 
-    <div
-      v-if="!revealed && practiceMode === 'flashcard'"
-      class="flex justify-center"
-    >
-      <button
-        class="btn"
-        @click="revealed = true"
-      >
-        Reveal
-      </button>
-    </div>
-
-    <div
-      v-if="!revealed && practiceMode === 'prompt'"
-      class="space-y-2"
-    >
-      <textarea
-        v-model="userResponse"
-        placeholder="Type your response here..."
-        class="textarea textarea-bordered w-full h-32"
-        @keydown.enter.ctrl="handleDone"
-      />
-      <div class="flex justify-center">
-        <button
-          class="btn"
-          :disabled="userResponse.trim().length === 0"
-          @click="handleDone"
-        >
-          Done
-        </button>
-      </div>
-    </div>
-
-    <template v-if="revealed">
-      <div class="divider" />
-
-      <div
-        v-if="practiceMode === 'prompt' && userResponse.trim().length > 0"
-        class="mb-4"
-      >
         <div
-          v-if="answersMatch"
-          class="border rounded-lg p-4 relative"
+          v-if="practiceMode === 'prompt' && userResponse.trim().length > 0"
+          class="mb-4"
         >
-          <div class="absolute top-4 right-4 text-success">
-            <Check :size="24" />
-          </div>
-          <h4 class="font-semibold mb-2 text-sm">
-            Your Answer / Correct Answer
-          </h4>
-          <MarkdownText :text="currentAnswer" />
-        </div>
-        <div
-          v-else
-          class="flex gap-2 flex-row flex-wrap"
-        >
-          <div class="border rounded-lg p-4">
-            <h4 class="font-semibold mb-2 text-sm">
-              Your Answer
-            </h4>
-            <div class="whitespace-pre-wrap text-sm">
-              {{ userResponse }}
+          <div
+            v-if="answersMatch"
+            class="border rounded-lg p-4 relative"
+          >
+            <div class="absolute top-4 right-4 text-success">
+              <Check :size="24" />
             </div>
-          </div>
-          <div class="border rounded-lg p-4">
             <h4 class="font-semibold mb-2 text-sm">
-              Correct Answer
+              Your Answer / Correct Answer
             </h4>
             <MarkdownText :text="currentAnswer" />
           </div>
+          <div
+            v-else
+            class="flex gap-2 flex-row flex-wrap"
+          >
+            <div class="border rounded-lg p-4">
+              <h4 class="font-semibold mb-2 text-sm">
+                Your Answer
+              </h4>
+              <div class="whitespace-pre-wrap text-sm">
+                {{ userResponse }}
+              </div>
+            </div>
+            <div class="border rounded-lg p-4">
+              <h4 class="font-semibold mb-2 text-sm">
+                Correct Answer
+              </h4>
+              <MarkdownText :text="currentAnswer" />
+            </div>
+          </div>
+        </div>
+
+        <MarkdownText
+          v-else
+          :text="currentAnswer"
+        />
+      </template>
+    </template>
+
+    <template #controls>
+      <div
+        v-if="!revealed && practiceMode === 'flashcard'"
+        class="flex justify-center"
+      >
+        <button
+          class="btn"
+          @click="revealed = true"
+        >
+          Reveal
+        </button>
+      </div>
+
+      <div
+        v-if="!revealed && practiceMode === 'prompt'"
+        class="space-y-2"
+      >
+        <textarea
+          v-model="userResponse"
+          placeholder="Type your response here..."
+          class="textarea textarea-bordered w-full h-32"
+          @keydown.enter.ctrl="handleDone"
+        />
+        <div class="flex justify-center">
+          <button
+            class="btn"
+            :disabled="userResponse.trim().length === 0"
+            @click="handleDone"
+          >
+            Done
+          </button>
         </div>
       </div>
 
-      <MarkdownText
-        v-else
-        :text="currentAnswer"
-      />
-
-      <div class="flex gap-2 justify-center mt-4">
+      <div
+        v-if="revealed"
+        class="flex gap-2 justify-center"
+      >
         <button
           class="btn"
           @click="handleRating(Rating.Again)"
         >
           Again
         </button>
-
         <button
           class="btn"
           @click="handleRating(Rating.Hard)"
@@ -124,18 +122,18 @@
         </button>
       </div>
     </template>
-  </div>
+  </PracticeLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { fsrs, Rating, createEmptyCard } from 'ts-fsrs';
-import { Check, Pencil } from 'lucide-vue-next';
+import { Check } from 'lucide-vue-next';
 
 import type { SimpleFlashcard } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { learningProgressRepo } from '@/entities/learning-progress';
-import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
+import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
 
 const props = defineProps<{
   flashcard: SimpleFlashcard;
@@ -143,7 +141,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   complete: [];
+  skip: [];
   edit: [];
+  delete: [];
+  disable: [];
+  filter: [];
 }>();
 
 const revealed = ref(false);
@@ -229,13 +231,6 @@ function handleDone() {
   if (userResponse.value.trim().length > 0) {
     revealed.value = true;
   }
-}
-
-async function handleDisable() {
-  if (!props.flashcard.id) return;
-
-  await simpleFlashcardRepo.update(props.flashcard.id, { isDisabled: true });
-  emit('complete');
 }
 
 async function handleRating(rating: Rating) {

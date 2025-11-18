@@ -1,50 +1,15 @@
 <template>
-  <div class="space-y-4">
-    <div class="flex justify-between items-start">
+  <PracticeLayout
+    @skip="emit('skip')"
+    @edit="emit('edit')"
+    @delete="emit('delete')"
+    @filter="emit('filter')"
+  >
+    <template #exercise>
       <MarkdownText :text="list.name" />
-      <button
-        class="btn btn-xs btn-ghost gap-1"
-        @click="emit('edit')"
-      >
-        <Pencil :size="14" />
-        Edit
-      </button>
-    </div>
 
-    <template v-if="!revealed">
-      <div class="form-control w-full">
-        <label class="label">
-          <span class="label-text">Enter items you remember:</span>
-        </label>
-        <div class="space-y-2">
-          <div
-            v-for="(_userItem, index) in userInputItems"
-            :key="index"
-            class="flex gap-2 items-center"
-          >
-            <input
-              v-model="userInputItems[index]"
-              type="text"
-              :placeholder="`Item ${index + 1}`"
-              class="input input-bordered flex-1"
-              @input="handleUserInputChange"
-            >
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-center">
-        <button
-          class="btn"
-          @click="handleReveal"
-        >
-          Reveal
-        </button>
-      </div>
-    </template>
-
-    <template v-if="revealed">
-      <div class="overflow-x-auto">
+      <template v-if="revealed">
+        <div class="overflow-x-auto">
         <table class="table w-full">
           <thead>
             <tr>
@@ -84,17 +49,58 @@
         </table>
       </div>
 
-      <div
-        v-if="list.note"
-        class="card bg-base-200 p-3 mt-4"
-      >
-        <div class="text-xs opacity-70 mb-1">
-          Note
+        <div
+          v-if="list.note"
+          class="card bg-base-200 p-3 mt-4"
+        >
+          <div class="text-xs opacity-70 mb-1">
+            Note
+          </div>
+          <MarkdownText :text="list.note" />
         </div>
-        <MarkdownText :text="list.note" />
+      </template>
+    </template>
+
+    <template #controls>
+      <div
+        v-if="!revealed"
+        class="space-y-4"
+      >
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Enter items you remember:</span>
+          </label>
+          <div class="space-y-2">
+            <div
+              v-for="(_userItem, index) in userInputItems"
+              :key="index"
+              class="flex gap-2 items-center"
+            >
+              <input
+                v-model="userInputItems[index]"
+                type="text"
+                :placeholder="`Item ${index + 1}`"
+                class="input input-bordered flex-1"
+                @input="handleUserInputChange"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-center">
+          <button
+            class="btn"
+            @click="handleReveal"
+          >
+            Reveal
+          </button>
+        </div>
       </div>
 
-      <div class="flex justify-center mt-4">
+      <div
+        v-if="revealed"
+        class="flex justify-center"
+      >
         <button
           class="btn btn-primary"
           @click="handleComplete"
@@ -103,18 +109,18 @@
         </button>
       </div>
     </template>
-  </div>
+  </PracticeLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import * as ebisu from 'ebisu-js';
 import type { Model as EbisuModel } from 'ebisu-js';
-import { Pencil } from 'lucide-vue-next';
 
 import type { List } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
 
 const props = defineProps<{
   list: List;
@@ -122,7 +128,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   complete: [];
+  skip: [];
   edit: [];
+  delete: [];
+  filter: [];
 }>();
 
 const revealed = ref(false);

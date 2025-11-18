@@ -43,6 +43,8 @@
       />
     </div>
 
+    <MinimumIntervalSelector v-model="localMinimumInterval" />
+
     <div class="form-control w-full">
       <label class="label">
         <span class="label-text">Items</span>
@@ -133,22 +135,24 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
-import type { List } from '@/app/database';
+import type { List, Duration } from '@/app/database';
 import { shuffleArray } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
   list?: List;
 }>();
 
 const emit = defineEmits<{
-  update: [data: { name: string; items: string[]; isOrderedList: boolean; note?: string; priority: number }];
+  update: [data: { name: string; items: string[]; isOrderedList: boolean; note?: string; minimumInterval?: Duration; priority: number }];
 }>();
 
 const localName = ref(props.list?.name || '');
 const localItems = ref<string[]>([...(props.list?.items || []), '']);
 const localIsOrderedList = ref(props.list?.isOrderedList ?? false);
 const localNote = ref(props.list?.note || '');
+const localMinimumInterval = ref<Duration | undefined>(props.list?.minimumInterval);
 const localPriority = ref(5);
 
 onMounted(async () => {
@@ -207,11 +211,12 @@ function emitUpdate() {
     items: nonEmptyItems,
     isOrderedList: localIsOrderedList.value,
     note: localNote.value || undefined,
+    minimumInterval: localMinimumInterval.value,
     priority: localPriority.value,
   });
 }
 
-watch([localName, localIsOrderedList, localNote, localPriority], () => {
+watch([localName, localIsOrderedList, localNote, localMinimumInterval, localPriority], () => {
   emitUpdate();
 });
 </script>

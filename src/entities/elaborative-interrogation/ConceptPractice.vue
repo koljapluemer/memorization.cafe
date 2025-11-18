@@ -1,58 +1,57 @@
 <template>
-  <div class="space-y-4">
-    <div class="flex justify-between items-start">
+  <PracticeLayout
+    @skip="emit('skip')"
+    @edit="emit('edit')"
+    @delete="emit('delete')"
+    @filter="emit('filter')"
+  >
+    <template #exercise>
       <h2 class="text-2xl font-bold">
         {{ concept.name }}
       </h2>
-      <button
-        class="btn btn-xs btn-ghost gap-1"
-        @click="emit('edit')"
-      >
-        <Pencil :size="14" />
-        Edit
-      </button>
-    </div>
 
-    <MarkdownText
-      v-if="concept.description"
-      :text="concept.description"
-    />
-
-    <div class="divider" />
-
-    <p class="text-lg font-semibold">
-      {{ selectedQuestion }}
-    </p>
-
-    <div class="form-control w-full">
-      <textarea
-        v-model="answer"
-        placeholder="Type your answer here..."
-        class="textarea textarea-bordered w-full h-40"
+      <MarkdownText
+        v-if="concept.description"
+        :text="concept.description"
       />
-    </div>
 
-    <div class="flex justify-center">
-      <button
-        class="btn btn-primary"
-        @click="handleDone"
-      >
-        Done
-      </button>
-    </div>
-  </div>
+      <div class="divider" />
+
+      <p class="text-lg font-semibold">
+        {{ selectedQuestion }}
+      </p>
+    </template>
+
+    <template #controls>
+      <div class="form-control w-full">
+        <textarea
+          v-model="answer"
+          placeholder="Type your answer here..."
+          class="textarea textarea-bordered w-full h-40"
+        />
+      </div>
+
+      <div class="flex justify-center">
+        <button
+          class="btn btn-primary"
+          @click="handleDone"
+        >
+          Done
+        </button>
+      </div>
+    </template>
+  </PracticeLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { Pencil } from 'lucide-vue-next';
 
 import type { ElaborativeInterrogationConcept } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { getRandomItem } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
 import { questionListRepo } from '@/entities/question-list';
-
+import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
 
 const props = defineProps<{
   concept: ElaborativeInterrogationConcept;
@@ -60,7 +59,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   complete: [];
+  skip: [];
   edit: [];
+  delete: [];
+  filter: [];
 }>();
 
 const selectedQuestion = ref('');

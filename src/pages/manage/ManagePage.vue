@@ -336,6 +336,16 @@ async function handleSaveItem(data: unknown) {
     collectionId: activeTabId.value,
   };
 
+  // Set default minimumInterval for new items
+  if (isNewItem.value && !itemData.minimumInterval) {
+    if (editingItemType.value === 'concept') {
+      itemData.minimumInterval = 'WEEK';
+    } else if (editingItemType.value === 'list') {
+      itemData.minimumInterval = 'DAY';
+    }
+    // flashcards and clozes have no default (undefined)
+  }
+
   let itemId: string | undefined;
 
   if (isNewItem.value) {

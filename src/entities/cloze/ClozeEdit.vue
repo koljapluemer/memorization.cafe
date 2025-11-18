@@ -176,6 +176,9 @@
       </div>
     </div>
 
+    <!-- Minimum Interval -->
+    <MinimumIntervalSelector v-model="localMinimumInterval" />
+
     <!-- Priority -->
     <div class="form-control w-full">
       <label
@@ -213,9 +216,10 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 
-import type { Cloze, ClozeStrategy } from '@/app/database';
+import type { Cloze, ClozeStrategy, Duration } from '@/app/database';
 import { generateClozeText, getDefaultIndices } from '@/dumb/cloze-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
   cloze?: Cloze;
@@ -228,6 +232,7 @@ const emit = defineEmits<{
     content: string;
     clozeStrategy: ClozeStrategy;
     indices: number[];
+    minimumInterval?: Duration;
     priority: number;
   }];
 }>();
@@ -237,6 +242,7 @@ const localPostExercise = ref(props.cloze?.postExercise || '');
 const localContent = ref(props.cloze?.content || '');
 const localClozeStrategy = ref<ClozeStrategy>(props.cloze?.clozeStrategy || 'atSpace');
 const localIndices = ref<number[]>(props.cloze?.indices || []);
+const localMinimumInterval = ref<Duration | undefined>(props.cloze?.minimumInterval);
 const localPriority = ref(5);
 
 onMounted(async () => {
@@ -352,6 +358,7 @@ function emitUpdate(): void {
     content: localContent.value,
     clozeStrategy: localClozeStrategy.value,
     indices: localIndices.value,
+    minimumInterval: localMinimumInterval.value,
     priority: localPriority.value,
   });
 }
@@ -364,7 +371,7 @@ watch(localContent, (newContent) => {
   emitUpdate();
 });
 
-watch([localPreExercise, localPostExercise, localPriority], () => {
+watch([localPreExercise, localPostExercise, localMinimumInterval, localPriority], () => {
   emitUpdate();
 });
 

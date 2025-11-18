@@ -5,25 +5,38 @@
         v-if="currentItemType === 'flashcard'"
         :flashcard="currentItem as SimpleFlashcard"
         @complete="loadNextItem"
+        @skip="loadNextItem"
         @edit="handleEdit"
+        @delete="handleDelete"
+        @disable="handleDisable"
+        @filter="openFilterModal"
       />
       <ElaborativeInterrogationPractice
         v-else-if="currentItemType === 'concept'"
         :concept="currentItem as ElaborativeInterrogationConcept"
         @complete="loadNextItem"
+        @skip="loadNextItem"
         @edit="handleEdit"
+        @delete="handleDelete"
+        @filter="openFilterModal"
       />
       <ListPractice
         v-else-if="currentItemType === 'list'"
         :list="currentItem as List"
         @complete="loadNextItem"
+        @skip="loadNextItem"
         @edit="handleEdit"
+        @delete="handleDelete"
+        @filter="openFilterModal"
       />
       <ClozePractice
         v-else-if="currentItemType === 'cloze'"
         :cloze="currentItem as Cloze"
         @complete="loadNextItem"
+        @skip="loadNextItem"
         @edit="handleEdit"
+        @delete="handleDelete"
+        @filter="openFilterModal"
       />
     </div>
 
@@ -38,15 +51,6 @@
         Add some learning items or adjust your filters.
       </p>
     </div>
-
-    <!-- Filter FAB -->
-    <button
-      class="btn btn-circle btn-primary fixed top-20 right-4"
-      aria-label="Filter"
-      @click="openFilterModal"
-    >
-      <Filter :size="20" />
-    </button>
 
     <FilterModal
       ref="filterModalRef"
@@ -68,7 +72,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { Filter } from 'lucide-vue-next';
 
 import FilterModal from './FilterModal.vue';
 import { loadFilters, saveFilters, type PracticeFilters } from './filter-storage';
@@ -561,6 +564,41 @@ async function reloadCurrentItem() {
     const updated = await clozeRepo.getById(currentItem.value.id);
     if (updated) currentItem.value = updated;
   }
+}
+
+async function handleDelete() {
+  if (!currentItem.value?.id || !currentItemType.value) return;
+
+  const confirmed = confirm('Are you sure you want to delete this item? This action cannot be undone.');
+  if (!confirmed) return;
+
+  const itemId = currentItem.value.id;
+
+  // Delete based on type
+  if (currentItemType.value === 'flashcard') {
+    await simpleFlashcardRepo.delete(itemId);
+  } else if (currentItemType.value === 'concept') {
+    await elaborativeInterrogationRepo.delete(itemId);
+  } else if (currentItemType.value === 'list') {
+    await listRepo.delete(itemId);
+  } else if (currentItemType.value === 'cloze') {
+    await clozeRepo.delete(itemId);
+  }
+
+  // Load next item
+  await loadNextItem();
+}
+
+async function handleDisable() {
+  if (!currentItem.value?.id || currentItemType.value !== 'flashcard') return;
+
+  const flashcard = currentItem.value as SimpleFlashcard;
+  await simpleFlashcardRepo.update(flashcard.id!, {
+    isDisabled: !flashcard.isDisabled,
+  });
+
+  // Load next item
+  await loadNextItem();
 }
 </script>
 

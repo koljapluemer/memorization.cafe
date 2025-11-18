@@ -5,6 +5,7 @@ import type { ListContract } from './contract';
 import { db, type List } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
+import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
 const RECALL_THRESHOLD = 0.9;
 
@@ -40,7 +41,12 @@ export const listRepo: ListContract = {
       const elapsedHours = (now.getTime() - new Date(lastReviewTimestamp).getTime()) / (1000 * 60 * 60);
       const recallProbability = ebisu.predictRecall(model, elapsedHours, true);
 
-      return recallProbability < RECALL_THRESHOLD;
+      // Check if recall probability is below threshold
+      if (recallProbability >= RECALL_THRESHOLD) return false;
+
+      // Check if minimum interval has passed since last review
+      const lastReviewDate = new Date(lastReviewTimestamp);
+      return hasMinimumIntervalPassed(lastReviewDate, list.minimumInterval, now);
     });
 
     // Use weighted selection based on priority

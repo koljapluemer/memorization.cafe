@@ -10,6 +10,8 @@ export interface Collection {
   realmId?: string; // For future sharing functionality
 }
 
+export type Duration = "HOUR" | "DAY" | "TWO_DAYS" | "WEEK" | "MONTH" 
+
 export interface SimpleFlashcard {
   id?: string;
   collectionId: string;
@@ -20,6 +22,7 @@ export interface SimpleFlashcard {
   practiceReverse?: boolean;
   isDisabled?: boolean;
   realmId?: string;
+  minimumInterval?: Duration;
 }
 
 export interface ElaborativeInterrogationConcept {
@@ -29,6 +32,7 @@ export interface ElaborativeInterrogationConcept {
   description?: string;
   questionListId?: string; // References QuestionList.id
   realmId?: string;
+  minimumInterval?: Duration;
 }
 
 export interface List {
@@ -39,6 +43,7 @@ export interface List {
   isOrderedList: boolean;
   note?: string;
   realmId?: string;
+  minimumInterval?: Duration;
 }
 
 export interface QuestionList {
@@ -47,6 +52,7 @@ export interface QuestionList {
   questions: string[];
   isDefault: boolean;
   realmId?: string;
+  minimumInterval?: Duration;
 }
 
 export type ClozeStrategy = 'atSpace' | 'atEveryCharacter' | 'split';
@@ -60,6 +66,7 @@ export interface Cloze {
   clozeStrategy: ClozeStrategy;
   indices: number[];
   realmId?: string;
+  minimumInterval?: Duration;
 }
 
 export interface LearningProgress {

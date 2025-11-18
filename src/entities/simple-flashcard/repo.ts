@@ -3,6 +3,7 @@ import type { SimpleFlashcardContract } from './contract';
 import { db, type SimpleFlashcard } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
+import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
 export const simpleFlashcardRepo: SimpleFlashcardContract = {
   async getAll(): Promise<SimpleFlashcard[]> {
@@ -34,7 +35,13 @@ export const simpleFlashcardRepo: SimpleFlashcardContract = {
     const dueFlashcards = enabledFlashcards.filter((flashcard: SimpleFlashcard) => {
       const progress = progressRecords.find((p: { learningItemId: string }) => p.learningItemId === flashcard.id);
       if (!progress?.cardData) return false;
-      return progress.cardData.due <= now;
+
+      // Check if card is due according to FSRS
+      if (progress.cardData.due > now) return false;
+
+      // Check if minimum interval has passed since last review
+      const lastReviewDate = progress.cardData.last_review ? new Date(progress.cardData.last_review) : null;
+      return hasMinimumIntervalPassed(lastReviewDate, flashcard.minimumInterval, now);
     });
 
     // Use weighted selection based on priority

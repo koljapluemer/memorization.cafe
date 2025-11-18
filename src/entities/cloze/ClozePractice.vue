@@ -1,51 +1,53 @@
 <template>
-  <div class="space-y-4">
-    <div class="flex justify-end">
-      <button
-        class="btn btn-xs btn-ghost gap-1"
-        @click="emit('edit')"
-      >
-        <Pencil :size="14" />
-        Edit
-      </button>
-    </div>
-
-    <MarkdownText
-      v-if="cloze.preExercise"
-      :text="cloze.preExercise"
-    />
-
-    <div
-      v-if="!revealed"
-      class="text-lg"
-    >
-      {{ clozedContent }}
-    </div>
-
-    <div
-      v-if="!revealed"
-      class="flex justify-center"
-    >
-      <button
-        class="btn"
-        @click="revealed = true"
-      >
-        Reveal
-      </button>
-    </div>
-
-    <template v-if="revealed">
-      <div
-        class="text-lg"
-        v-html="highlightedContent"
-      />
-
+  <PracticeLayout
+    @skip="emit('skip')"
+    @edit="emit('edit')"
+    @delete="emit('delete')"
+    @filter="emit('filter')"
+  >
+    <template #exercise>
       <MarkdownText
-        v-if="cloze.postExercise"
-        :text="cloze.postExercise"
+        v-if="cloze.preExercise"
+        :text="cloze.preExercise"
       />
 
-      <div class="flex gap-2 justify-center mt-4">
+      <div
+        v-if="!revealed"
+        class="text-lg"
+      >
+        {{ clozedContent }}
+      </div>
+
+      <template v-if="revealed">
+        <div
+          class="text-lg"
+          v-html="highlightedContent"
+        />
+
+        <MarkdownText
+          v-if="cloze.postExercise"
+          :text="cloze.postExercise"
+        />
+      </template>
+    </template>
+
+    <template #controls>
+      <div
+        v-if="!revealed"
+        class="flex justify-center"
+      >
+        <button
+          class="btn"
+          @click="revealed = true"
+        >
+          Reveal
+        </button>
+      </div>
+
+      <div
+        v-if="revealed"
+        class="flex gap-2 justify-center"
+      >
         <button
           class="btn"
           @click="handleRating(Rating.Again)"
@@ -72,18 +74,18 @@
         </button>
       </div>
     </template>
-  </div>
+  </PracticeLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { fsrs, Rating, createEmptyCard } from 'ts-fsrs';
-import { Pencil } from 'lucide-vue-next';
 
 import type { Cloze } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { generateClozeText } from '@/dumb/cloze-utils';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
 
 const props = defineProps<{
   cloze: Cloze;
@@ -91,7 +93,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   complete: [];
+  skip: [];
   edit: [];
+  delete: [];
+  filter: [];
 }>();
 
 const revealed = ref(false);

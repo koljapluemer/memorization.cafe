@@ -5,6 +5,7 @@ import type { ClozeContract } from './contract';
 import { db, type Cloze } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
+import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
 export const clozeRepo: ClozeContract = {
   async getAll(): Promise<Cloze[]> {
@@ -40,7 +41,11 @@ export const clozeRepo: ClozeContract = {
       if (card.state === State.New) return false;
 
       const dueDate = new Date(card.due);
-      return dueDate <= now;
+      if (dueDate > now) return false;
+
+      // Check if minimum interval has passed since last review
+      const lastReviewDate = card.last_review ? new Date(card.last_review) : null;
+      return hasMinimumIntervalPassed(lastReviewDate, cloze.minimumInterval, now);
     });
 
     // Use weighted selection based on priority

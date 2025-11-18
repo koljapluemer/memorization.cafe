@@ -3,6 +3,7 @@ import type { ElaborativeInterrogationContract } from './contract';
 import { db, type ElaborativeInterrogationConcept } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
+import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
 function isSameCalendarDay(date1: Date, date2: Date): boolean {
   return date1.getFullYear() === date2.getFullYear() &&
@@ -42,7 +43,11 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
       if (!lastAnswer) return false;
 
       // Only return concepts that were NOT answered today
-      return !isSameCalendarDay(new Date(lastAnswer.timestamp), now);
+      if (isSameCalendarDay(new Date(lastAnswer.timestamp), now)) return false;
+
+      // Check if minimum interval has passed since last answer
+      const lastReviewDate = new Date(lastAnswer.timestamp);
+      return hasMinimumIntervalPassed(lastReviewDate, concept.minimumInterval, now);
     });
 
     // Use weighted selection based on priority

@@ -79,6 +79,8 @@
       </label>
     </div>
 
+    <MinimumIntervalSelector v-model="localMinimumInterval" />
+
     <div class="form-control w-full">
       <label
         for="priority"
@@ -115,15 +117,16 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 
-import type { SimpleFlashcard } from '@/app/database';
+import type { SimpleFlashcard, Duration } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
   flashcard?: SimpleFlashcard;
 }>();
 
 const emit = defineEmits<{
-  update: [data: { front: string; back: string; practiceAsFlashcard: boolean; practiceAsPrompt: boolean; practiceReverse: boolean; isDisabled: boolean; priority: number }];
+  update: [data: { front: string; back: string; practiceAsFlashcard: boolean; practiceAsPrompt: boolean; practiceReverse: boolean; isDisabled: boolean; minimumInterval?: Duration; priority: number }];
 }>();
 
 const localFront = ref(props.flashcard?.front || '');
@@ -132,6 +135,7 @@ const localPracticeAsFlashcard = ref(props.flashcard?.practiceAsFlashcard ?? tru
 const localPracticeAsPrompt = ref(props.flashcard?.practiceAsPrompt ?? false);
 const localPracticeReverse = ref(props.flashcard?.practiceReverse ?? false);
 const localIsDisabled = ref(props.flashcard?.isDisabled ?? false);
+const localMinimumInterval = ref<Duration | undefined>(props.flashcard?.minimumInterval);
 const localPriority = ref(5);
 
 const validationError = computed(() => {
@@ -148,7 +152,7 @@ onMounted(async () => {
   }
 });
 
-watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, localPracticeReverse, localIsDisabled, localPriority], () => {
+watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, localPracticeReverse, localIsDisabled, localMinimumInterval, localPriority], () => {
   emit('update', {
     front: localFront.value,
     back: localBack.value,
@@ -156,6 +160,7 @@ watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, l
     practiceAsPrompt: localPracticeAsPrompt.value,
     practiceReverse: localPracticeReverse.value,
     isDisabled: localIsDisabled.value,
+    minimumInterval: localMinimumInterval.value,
     priority: localPriority.value,
   });
 });

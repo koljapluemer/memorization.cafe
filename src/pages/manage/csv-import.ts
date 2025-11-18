@@ -1,4 +1,4 @@
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze, ClozeStrategy } from '@/app/database';
+import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze, ClozeStrategy, Duration } from '@/app/database';
 import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
 import { elaborativeInterrogationRepo } from '@/entities/elaborative-interrogation';
 import { listRepo } from '@/entities/list';
@@ -33,6 +33,9 @@ export async function importFlashcardsFromCsv(
         practiceAsFlashcard: row.practiceAsFlashcard?.toLowerCase() === 'false' ? false : true,
         practiceAsPrompt: row.practiceAsPrompt?.toLowerCase() === 'true' ? true : false,
         practiceReverse: row.practiceReverse?.toLowerCase() === 'true' ? true : false,
+        minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
+          ? (row.minimumInterval as Duration)
+          : undefined,
       };
 
       // Check for duplicates (same front AND back, case-insensitive)
@@ -76,6 +79,9 @@ export async function importConceptsFromCsv(
         collectionId,
         name: row.name || '',
         description: row.description || undefined,
+        minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
+          ? (row.minimumInterval as Duration)
+          : 'WEEK', // Default for concepts
       };
 
       // Check for duplicates (same name, case-insensitive)
@@ -121,6 +127,9 @@ export async function importListsFromCsv(
         items,
         isOrderedList: row.isOrderedList?.toLowerCase() === 'true' ? true : false,
         note: row.note || undefined,
+        minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
+          ? (row.minimumInterval as Duration)
+          : 'DAY', // Default for lists
       };
 
       // Check for duplicates (same name, case-insensitive)
@@ -175,6 +184,9 @@ export async function importClozesFromCsv(
         indices,
         preExercise: row.preExercise || undefined,
         postExercise: row.postExercise || undefined,
+        minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
+          ? (row.minimumInterval as Duration)
+          : undefined,
       };
 
       // Check for duplicates (same content AND same indices array)

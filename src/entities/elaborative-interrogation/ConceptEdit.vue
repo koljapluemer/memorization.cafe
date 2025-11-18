@@ -53,6 +53,8 @@
       </select>
     </div>
 
+    <MinimumIntervalSelector v-model="localMinimumInterval" />
+
     <div class="form-control w-full">
       <label
         for="priority"
@@ -89,22 +91,24 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
-import type { ElaborativeInterrogationConcept } from '@/app/database';
+import type { ElaborativeInterrogationConcept, Duration } from '@/app/database';
 import { questionListRepo } from '@/entities/question-list';
 import type { QuestionList } from '@/entities/question-list';
 import { learningProgressRepo } from '@/entities/learning-progress';
+import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
   concept?: ElaborativeInterrogationConcept;
 }>();
 
 const emit = defineEmits<{
-  update: [data: { name: string; description?: string; questionListId?: string; priority: number }];
+  update: [data: { name: string; description?: string; questionListId?: string; minimumInterval?: Duration; priority: number }];
 }>();
 
 const localName = ref(props.concept?.name || '');
 const localDescription = ref(props.concept?.description || '');
 const localQuestionListId = ref<string | undefined>(props.concept?.questionListId);
+const localMinimumInterval = ref<Duration | undefined>(props.concept?.minimumInterval);
 const localPriority = ref(5);
 const questionLists = ref<QuestionList[]>([]);
 
@@ -125,11 +129,12 @@ onMounted(async () => {
   }
 });
 
-watch([localName, localDescription, localQuestionListId, localPriority], () => {
+watch([localName, localDescription, localQuestionListId, localMinimumInterval, localPriority], () => {
   emit('update', {
     name: localName.value,
     description: localDescription.value || undefined,
     questionListId: localQuestionListId.value,
+    minimumInterval: localMinimumInterval.value,
     priority: localPriority.value,
   });
 });
