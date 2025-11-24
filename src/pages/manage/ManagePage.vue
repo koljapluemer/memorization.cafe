@@ -26,6 +26,7 @@
         :collection="activeCollection"
         :learning-items="allLearningItems"
         @edit-collection="openCollectionModal(activeCollection, false)"
+        @share-collection="openShareModal"
         @delete-collection="handleDeleteCollection"
         @add-item="(type) => openItemModal(type, null, true)"
         @edit-item="(type, item) => openItemModal(type, item, false)"
@@ -82,6 +83,12 @@
       :open-tab-ids="openTabIds"
       @select="openTab"
     />
+
+    <ShareCollectionModal
+      v-if="activeCollection?.id"
+      ref="shareModalRef"
+      :collection-id="activeCollection.id"
+    />
   </div>
 </template>
 
@@ -96,6 +103,7 @@ import LearningItemEditModal from './LearningItemEditModal.vue';
 import PreviewModal from './PreviewModal.vue';
 import MoveItemModal from './MoveItemModal.vue';
 import OpenCollectionModal from './OpenCollectionModal.vue';
+import { ShareCollectionModal } from '@/features/collection-sharing';
 import { loadOpenTabs, saveOpenTabs } from './tab-storage';
 import { generateExampleCsv, downloadCsv, parseCsv, validateCsvData, readFileAsText, type EntityType } from './csv-utils';
 import { importFlashcardsFromCsv, importConceptsFromCsv, importListsFromCsv, importClozesFromCsv } from './csv-import';
@@ -123,6 +131,7 @@ const itemModalRef = ref<InstanceType<typeof LearningItemEditModal> | null>(null
 const previewModalRef = ref<InstanceType<typeof PreviewModal> | null>(null);
 const moveItemModalRef = ref<InstanceType<typeof MoveItemModal> | null>(null);
 const openCollectionModalRef = ref<InstanceType<typeof OpenCollectionModal> | null>(null);
+const shareModalRef = ref<InstanceType<typeof ShareCollectionModal> | null>(null);
 
 const editingCollection = ref<Collection | undefined>(undefined);
 const isNewCollection = ref(false);
@@ -262,6 +271,10 @@ function openCollectionModal(collection: Collection | null, isNew: boolean) {
   isNewCollection.value = isNew;
   // Pass the collection directly to open()
   collectionModalRef.value?.open(collection || undefined);
+}
+
+function openShareModal() {
+  shareModalRef.value?.open();
 }
 
 async function handleSaveCollection(data: { name: string; description?: string }) {

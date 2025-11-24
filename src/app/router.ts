@@ -22,6 +22,11 @@ const router = createRouter({
       name: 'Settings',
       component: () => import('@/pages/settings/SettingsPage.vue'),
     },
+    {
+      path: '/public/:shareId',
+      name: 'PublicCollection',
+      component: () => import('@/pages/public/PublicCollectionPage.vue'),
+    },
   ],
 });
 

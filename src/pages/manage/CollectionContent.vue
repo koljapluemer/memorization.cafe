@@ -15,6 +15,12 @@
           </button>
           <button
             class="btn btn-sm"
+            @click="$emit('share-collection')"
+          >
+            <Share2 :size="16" /> Share Collection
+          </button>
+          <button
+            class="btn btn-sm"
             @click="$emit('delete-collection')"
           >
             <Trash2 :size="16" /> Delete Collection
@@ -75,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { Edit, Trash2 } from 'lucide-vue-next';
+import { Edit, Share2, Trash2 } from 'lucide-vue-next';
 
 import LearningItemsTable, { type LearningItem } from './LearningItemsTable.vue';
 import CsvImportExportTable from './CsvImportExportTable.vue';
@@ -91,6 +97,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'edit-collection': [];
+  'share-collection': [];
   'delete-collection': [];
   'add-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze'];
   'edit-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
