@@ -50,25 +50,12 @@
       <!-- Download Button -->
       <div>
         <button
-          class="btn btn-primary"
+          class="btn btn-primary btn-lg"
           :disabled="isDownloading"
           @click="handleDownload"
         >
-          {{ isDownloading ? 'Downloading...' : 'Download to My Collections' }}
+          {{ isDownloading ? 'Downloading...' : 'Start Practice' }}
         </button>
-      </div>
-
-      <div
-        v-if="downloadSuccess"
-        class="alert alert-success"
-      >
-        <p>Collection downloaded successfully!</p>
-        <router-link
-          :to="`/manage/${newCollectionId}`"
-          class="btn btn-sm"
-        >
-          View Collection
-        </router-link>
       </div>
 
       <!-- Content Stats -->
@@ -109,135 +96,13 @@
           </div>
         </div>
       </div>
-
-      <!-- Preview Items -->
-      <div class="space-y-4">
-        <!-- Flashcards Preview -->
-        <div
-          v-if="collection.items.flashcards.length > 0"
-          class="space-y-2"
-        >
-          <h2 class="text-xl font-semibold">
-            Flashcards ({{ collection.items.flashcards.length }})
-          </h2>
-          <div class="space-y-2">
-            <div
-              v-for="flashcard in collection.items.flashcards.slice(0, 5)"
-              :key="flashcard.id"
-              class="card bg-base-200"
-            >
-              <div class="card-body p-4">
-                <div class="font-medium">
-                  {{ flashcard.front }}
-                </div>
-                <div class="text-sm text-light">
-                  {{ flashcard.back }}
-                </div>
-              </div>
-            </div>
-            <p
-              v-if="collection.items.flashcards.length > 5"
-              class="text-sm text-light"
-            >
-              And {{ collection.items.flashcards.length - 5 }} more...
-            </p>
-          </div>
-        </div>
-
-        <!-- Concepts Preview -->
-        <div
-          v-if="collection.items.concepts.length > 0"
-          class="space-y-2"
-        >
-          <h2 class="text-xl font-semibold">
-            Concepts ({{ collection.items.concepts.length }})
-          </h2>
-          <div class="space-y-2">
-            <div
-              v-for="concept in collection.items.concepts.slice(0, 5)"
-              :key="concept.id"
-              class="card bg-base-200"
-            >
-              <div class="card-body p-4">
-                <div class="font-medium">
-                  {{ concept.name }}
-                </div>
-              </div>
-            </div>
-            <p
-              v-if="collection.items.concepts.length > 5"
-              class="text-sm text-light"
-            >
-              And {{ collection.items.concepts.length - 5 }} more...
-            </p>
-          </div>
-        </div>
-
-        <!-- Lists Preview -->
-        <div
-          v-if="collection.items.lists.length > 0"
-          class="space-y-2"
-        >
-          <h2 class="text-xl font-semibold">
-            Lists ({{ collection.items.lists.length }})
-          </h2>
-          <div class="space-y-2">
-            <div
-              v-for="list in collection.items.lists.slice(0, 5)"
-              :key="list.id"
-              class="card bg-base-200"
-            >
-              <div class="card-body p-4">
-                <div class="font-medium">
-                  {{ list.name }}
-                </div>
-              </div>
-            </div>
-            <p
-              v-if="collection.items.lists.length > 5"
-              class="text-sm text-light"
-            >
-              And {{ collection.items.lists.length - 5 }} more...
-            </p>
-          </div>
-        </div>
-
-        <!-- Clozes Preview -->
-        <div
-          v-if="collection.items.clozes.length > 0"
-          class="space-y-2"
-        >
-          <h2 class="text-xl font-semibold">
-            Clozes ({{ collection.items.clozes.length }})
-          </h2>
-          <div class="space-y-2">
-            <div
-              v-for="cloze in collection.items.clozes.slice(0, 5)"
-              :key="cloze.id"
-              class="card bg-base-200"
-            >
-              <div class="card-body p-4">
-                <div class="text-sm">
-                  {{ cloze.content.slice(0, 100) }}{{ cloze.content.length > 100 ? '...' : '' }}
-                </div>
-              </div>
-            </div>
-            <p
-              v-if="collection.items.clozes.length > 5"
-              class="text-sm text-light"
-            >
-              And {{ collection.items.clozes.length - 5 }} more...
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { loadSharedCollection, incrementViewCount } from './collection-loader';
 import { downloadCollection } from './collection-downloader';
@@ -245,6 +110,7 @@ import { incrementDownloadCount } from './collection-loader';
 import type { SharedCollection } from '@/features/collection-sharing';
 
 const route = useRoute();
+const router = useRouter();
 
 const collection = ref<SharedCollection | null>(null);
 const isLoading = ref(true);
@@ -286,6 +152,9 @@ async function handleDownload() {
     // Increment download count in background
     const shareId = route.params.shareId as string;
     incrementDownloadCount(shareId);
+
+    // Redirect to practice page with filter for this collection
+    router.push(`/practice?collection=${newCollectionId.value}`);
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to download collection';
   } finally {
