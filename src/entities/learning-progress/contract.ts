@@ -22,4 +22,7 @@ export interface LearningProgressContract {
   // General queries
   getAllProgressForItems(learningItemIds: string[]): Promise<LearningProgress[]>;
   delete(learningItemId: string): Promise<void>;
+
+  // Helper note
+  updateHelperNote(learningItemId: string, helperNote: string): Promise<void>;
 }

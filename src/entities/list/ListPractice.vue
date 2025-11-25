@@ -10,44 +10,41 @@
 
       <template v-if="revealed">
         <div class="overflow-x-auto">
-        <table class="table w-full">
-          <thead>
-            <tr>
-              <th v-if="list.isOrderedList">
-                #
-              </th>
-              <th>Your Input</th>
-              <th>Correct Items</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(correctItem, index) in list.items"
-              :key="index"
-            >
-              <td v-if="list.isOrderedList">
-                {{ index + 1 }}
-              </td>
-              <td>
-                <MarkdownText
-                  v-if="userAnswers[index]"
-                  :text="userAnswers[index]"
-                />
-              </td>
-              <td>
-                <label class="flex items-center gap-2">
-                  <input
-                    v-model="rememberedItems[index]"
-                    type="checkbox"
-                    class="checkbox"
+          <table class="table table-zebra w-full">
+            <tbody>
+              <tr
+                v-for="(correctItem, index) in list.items"
+                :key="index"
+              >
+                <td v-if="list.isOrderedList">
+                  {{ index + 1 }}
+                </td>
+                <td v-if="!isNewItem">
+                  <MarkdownText
+                    v-if="userAnswers[index]"
+                    :text="userAnswers[index]"
+                  />
+                </td>
+                <td>
+                  <template v-if="isNewItem">
+                    <MarkdownText :text="correctItem" />
+                  </template>
+                  <label
+                    v-else
+                    class="flex items-center gap-2"
                   >
-                  <MarkdownText :text="correctItem" />
-                </label>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                    <input
+                      v-model="rememberedItems[index]"
+                      type="checkbox"
+                      class="checkbox"
+                    >
+                    <MarkdownText :text="correctItem" />
+                  </label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div
           v-if="list.note"
@@ -58,6 +55,31 @@
           </div>
           <MarkdownText :text="list.note" />
         </div>
+
+        <div
+          v-if="existingHelperNote && !editingNote"
+          class="mt-4 flex items-center gap-2"
+        >
+          <span>{{ existingHelperNote }}</span>
+          <button
+            class="btn btn-ghost btn-sm"
+            @click="editingNote = true"
+          >
+            <Edit :size="16" />
+          </button>
+        </div>
+
+        <fieldset
+          v-if="(isNewItem && !existingHelperNote) || editingNote"
+          class="fieldset mt-4"
+        >
+          <label class="label">Add a note on how you will remember this</label>
+          <textarea
+            v-model="helperNote"
+            class="textarea textarea-bordered w-full h-24"
+            @blur="saveHelperNote"
+          />
+        </fieldset>
       </template>
     </template>
 
@@ -113,9 +135,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import * as ebisu from 'ebisu-js';
 import type { Model as EbisuModel } from 'ebisu-js';
+import { Edit } from 'lucide-vue-next';
 
 import type { List } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
@@ -138,6 +161,28 @@ const revealed = ref(false);
 const userInputItems = ref<string[]>(['']);
 const userAnswers = ref<string[]>([]);
 const rememberedItems = ref<boolean[]>([]);
+const helperNote = ref('');
+const existingHelperNote = ref('');
+const isNewItem = ref(false);
+const editingNote = ref(false);
+
+onMounted(async () => {
+  // Check if this is a new list
+  const progress = await learningProgressRepo.getByLearningItemId(props.list.id!);
+  isNewItem.value = !progress;
+
+  // Load existing helper note if available
+  if (progress?.helperNote) {
+    existingHelperNote.value = progress.helperNote;
+  }
+
+  // Auto-reveal for new items
+  if (isNewItem.value) {
+    revealed.value = true;
+    // Show all correct items for new lists
+    rememberedItems.value = props.list.items.map(() => false);
+  }
+});
 
 function handleUserInputChange() {
   const nonEmptyItems = userInputItems.value.filter((item) => item.trim() !== '');
@@ -155,12 +200,26 @@ function handleReveal() {
   revealed.value = true;
 }
 
+async function saveHelperNote() {
+  if (helperNote.value.trim()) {
+    await learningProgressRepo.updateHelperNote(props.list.id!, helperNote.value.trim());
+    existingHelperNote.value = helperNote.value.trim();
+    editingNote.value = false;
+  }
+}
+
 async function handleComplete() {
   const progress = await learningProgressRepo.getByLearningItemId(props.list.id!);
 
-  const correctCount = rememberedItems.value.filter((remembered) => remembered).length;
-  const totalCount = props.list.items.length;
-  const percentageCorrect = totalCount > 0 ? correctCount / totalCount : 0;
+  // For new items, treat as 100% learned
+  let percentageCorrect: number;
+  if (isNewItem.value) {
+    percentageCorrect = 1.0;
+  } else {
+    const correctCount = rememberedItems.value.filter((remembered) => remembered).length;
+    const totalCount = props.list.items.length;
+    percentageCorrect = totalCount > 0 ? correctCount / totalCount : 0;
+  }
 
   let model: EbisuModel;
   let elapsedHours: number;
@@ -180,6 +239,11 @@ async function handleComplete() {
     await learningProgressRepo.updateEbisuProgress(props.list.id!, updatedModel);
   } else {
     await learningProgressRepo.createEbisuProgress(props.list.id!, 'list', updatedModel);
+  }
+
+  // Save helper note if provided
+  if (helperNote.value.trim()) {
+    await learningProgressRepo.updateHelperNote(props.list.id!, helperNote.value.trim());
   }
 
   emit('complete');

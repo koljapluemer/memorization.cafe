@@ -92,6 +92,9 @@ export interface LearningProgress {
     model: EbisuModel;
     lastReviewTimestamp: Date;
   };
+
+  // Helper note for remembering the item
+  helperNote?: string;
 }
 
 export class MemorizationDatabase extends Dexie {
