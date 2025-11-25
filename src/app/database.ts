@@ -7,7 +7,6 @@ export interface Collection {
   id?: string;
   name: string;
   description?: string;
-  realmId?: string; // For future sharing functionality
 }
 
 export type Duration = "HOUR" | "DAY" | "TWO_DAYS" | "WEEK" | "MONTH" 
@@ -21,7 +20,6 @@ export interface SimpleFlashcard {
   practiceAsPrompt: boolean;
   practiceReverse?: boolean;
   isDisabled?: boolean;
-  realmId?: string;
   minimumInterval?: Duration;
   priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
   frontImage?: string;
@@ -36,7 +34,6 @@ export interface ElaborativeInterrogationConcept {
   name: string;
   description?: string;
   questionListId?: string; // References QuestionList.id
-  realmId?: string;
   minimumInterval?: Duration;
   priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 }
@@ -48,7 +45,6 @@ export interface List {
   items: string[];
   isOrderedList: boolean;
   note?: string;
-  realmId?: string;
   minimumInterval?: Duration;
   priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 }
@@ -58,7 +54,6 @@ export interface QuestionList {
   name: string;
   questions: string[];
   isDefault: boolean;
-  realmId?: string;
   minimumInterval?: Duration;
 }
 
@@ -72,7 +67,6 @@ export interface Cloze {
   content: string;
   clozeStrategy: ClozeStrategy;
   indices: number[];
-  realmId?: string;
   minimumInterval?: Duration;
   priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 }
@@ -82,7 +76,6 @@ export interface LearningProgress {
   learningItemId: string; // References flashcard, concept, list, or cloze
   itemType: 'flashcard' | 'concept' | 'list' | 'cloze';
   owner?: string; // Current user ID (keeps progress private)
-  realmId?: string; // User's private realm
 
   // For flashcards (ts-fsrs Card data)
   cardData?: Card;
