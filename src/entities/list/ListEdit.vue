@@ -137,7 +137,6 @@ import { ref, watch, onMounted } from 'vue';
 
 import type { List, Duration } from '@/app/database';
 import { shuffleArray } from '@/dumb/array-utils';
-import { learningProgressRepo } from '@/entities/learning-progress';
 import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
@@ -155,10 +154,10 @@ const localNote = ref(props.list?.note || '');
 const localMinimumInterval = ref<Duration | undefined>(props.list?.minimumInterval);
 const localPriority = ref(5);
 
-onMounted(async () => {
-  // Load priority from learning progress if list exists
-  if (props.list?.id) {
-    localPriority.value = await learningProgressRepo.getPriority(props.list.id);
+onMounted(() => {
+  // Load priority from entity
+  if (props.list?.priority !== undefined) {
+    localPriority.value = props.list.priority;
   }
 });
 

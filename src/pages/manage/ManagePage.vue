@@ -114,7 +114,6 @@ import { elaborativeInterrogationRepo } from '@/entities/elaborative-interrogati
 import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
 import { listRepo } from '@/entities/list';
 import { clozeRepo } from '@/entities/cloze';
-import { learningProgressRepo } from '@/entities/learning-progress';
 import { useToast } from '@/app/toast';
 
 const collections = ref<Collection[]>([]);
@@ -340,10 +339,6 @@ async function handleSaveItem(data: unknown) {
   // Convert reactive Proxy to plain object for Dexie
   const plainData = JSON.parse(JSON.stringify(data));
 
-  // Extract priority from data (it's not part of the item schema)
-  const priority = (plainData as { priority?: number }).priority;
-  delete (plainData as { priority?: number }).priority;
-
   const itemData = {
     ...plainData,
     collectionId: activeTabId.value,
@@ -384,11 +379,6 @@ async function handleSaveItem(data: unknown) {
         await clozeRepo.update(itemId, plainData as Partial<Cloze>);
       }
     }
-  }
-
-  // Save priority to learning progress if provided and we have an item ID
-  if (itemId && priority !== undefined) {
-    await learningProgressRepo.updatePriority(itemId, priority);
   }
 
   await loadLearningItems();

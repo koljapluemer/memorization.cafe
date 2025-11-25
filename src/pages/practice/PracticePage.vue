@@ -524,10 +524,6 @@ async function handleSaveEdit(data: unknown) {
   // Convert reactive Proxy to plain object
   const plainData = JSON.parse(JSON.stringify(data));
 
-  // Extract priority from data (it's not part of the item schema)
-  const priority = (plainData as { priority?: number }).priority;
-  delete (plainData as { priority?: number }).priority;
-
   // Update item based on type
   if (currentItemType.value === 'flashcard') {
     await simpleFlashcardRepo.update(currentItem.value.id, plainData as Partial<SimpleFlashcard>);
@@ -537,11 +533,6 @@ async function handleSaveEdit(data: unknown) {
     await listRepo.update(currentItem.value.id, plainData as Partial<List>);
   } else if (currentItemType.value === 'cloze') {
     await clozeRepo.update(currentItem.value.id, plainData as Partial<Cloze>);
-  }
-
-  // Save priority to learning progress if provided
-  if (priority !== undefined) {
-    await learningProgressRepo.updatePriority(currentItem.value.id, priority);
   }
 
   // Reload current item to reflect changes (don't advance to next)

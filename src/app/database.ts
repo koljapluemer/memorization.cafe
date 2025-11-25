@@ -23,6 +23,7 @@ export interface SimpleFlashcard {
   isDisabled?: boolean;
   realmId?: string;
   minimumInterval?: Duration;
+  priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
   frontImage?: string;
   frontImageLabel?: string;
   backImage?: string;
@@ -37,6 +38,7 @@ export interface ElaborativeInterrogationConcept {
   questionListId?: string; // References QuestionList.id
   realmId?: string;
   minimumInterval?: Duration;
+  priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 }
 
 export interface List {
@@ -48,6 +50,7 @@ export interface List {
   note?: string;
   realmId?: string;
   minimumInterval?: Duration;
+  priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 }
 
 export interface QuestionList {
@@ -71,6 +74,7 @@ export interface Cloze {
   indices: number[];
   realmId?: string;
   minimumInterval?: Duration;
+  priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 }
 
 export interface LearningProgress {
@@ -79,7 +83,6 @@ export interface LearningProgress {
   itemType: 'flashcard' | 'concept' | 'list' | 'cloze';
   owner?: string; // Current user ID (keeps progress private)
   realmId?: string; // User's private realm
-  priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 
   // For flashcards (ts-fsrs Card data)
   cardData?: Card;
@@ -161,6 +164,16 @@ export class MemorizationDatabase extends Dexie {
       lists: '@id, collectionId, name',
       clozes: '@id, collectionId',
       learningProgress: '@id, learningItemId, itemType, owner, priority',
+      questionLists: '@id, name, isDefault',
+    });
+
+    this.version(7).stores({
+      collections: '@id, name',
+      flashcards: '@id, collectionId, isDisabled, priority',
+      concepts: '@id, collectionId, name, priority',
+      lists: '@id, collectionId, name, priority',
+      clozes: '@id, collectionId, priority',
+      learningProgress: '@id, learningItemId, itemType, owner',
       questionLists: '@id, name, isDefault',
     });
 

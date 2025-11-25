@@ -210,7 +210,6 @@
 import { ref, watch, computed, onMounted } from 'vue';
 
 import type { SimpleFlashcard, Duration } from '@/app/database';
-import { learningProgressRepo } from '@/entities/learning-progress';
 import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 import { resizeImage } from '@/dumb/image-utils';
 
@@ -289,10 +288,10 @@ function removeBackImage() {
   }
 }
 
-onMounted(async () => {
-  // Load priority from learning progress if flashcard exists
-  if (props.flashcard?.id) {
-    localPriority.value = await learningProgressRepo.getPriority(props.flashcard.id);
+onMounted(() => {
+  // Load priority from entity
+  if (props.flashcard?.priority !== undefined) {
+    localPriority.value = props.flashcard.priority;
   }
 });
 

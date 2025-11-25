@@ -49,15 +49,11 @@ export const listRepo: ListContract = {
       return hasMinimumIntervalPassed(lastReviewDate, list.minimumInterval, now);
     });
 
-    // Use weighted selection based on priority
-    const weightedLists: WeightedItem<List>[] = dueLists.map((list: List) => {
-      const progress = progressRecords.find((p) => p.learningItemId === list.id);
-      const priority = progress?.priority ?? 5; // Default to 5 (medium priority)
-      return {
-        item: list,
-        weight: priority,
-      };
-    });
+    // Use weighted selection based on priority from entity
+    const weightedLists: WeightedItem<List>[] = dueLists.map((list: List) => ({
+      item: list,
+      weight: list.priority ?? 5, // Default to 5 (medium priority)
+    }));
 
     return weightedRandomChoice(weightedLists);
   },
@@ -70,10 +66,10 @@ export const listRepo: ListContract = {
 
     const newLists = allLists.filter((l: List) => !existingProgressIds.includes(l.id!));
 
-    // For new items without progress, default all to priority 5
+    // Use entity priority for new items
     const weightedLists: WeightedItem<List>[] = newLists.map((list: List) => ({
       item: list,
-      weight: 5, // Default priority for new items
+      weight: list.priority ?? 5, // Default to 5 (medium priority)
     }));
 
     return weightedRandomChoice(weightedLists);

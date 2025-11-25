@@ -94,7 +94,6 @@ import { ref, watch, onMounted } from 'vue';
 import type { ElaborativeInterrogationConcept, Duration } from '@/app/database';
 import { questionListRepo } from '@/entities/question-list';
 import type { QuestionList } from '@/entities/question-list';
-import { learningProgressRepo } from '@/entities/learning-progress';
 import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
@@ -123,9 +122,9 @@ onMounted(async () => {
     }
   }
 
-  // Load priority from learning progress if concept exists
-  if (props.concept?.id) {
-    localPriority.value = await learningProgressRepo.getPriority(props.concept.id);
+  // Load priority from entity
+  if (props.concept?.priority !== undefined) {
+    localPriority.value = props.concept.priority;
   }
 });
 

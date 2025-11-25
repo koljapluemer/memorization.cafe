@@ -218,7 +218,6 @@ import { ref, watch, computed, onMounted } from 'vue';
 
 import type { Cloze, ClozeStrategy, Duration } from '@/app/database';
 import { generateClozeText, getDefaultIndices } from '@/dumb/cloze-utils';
-import { learningProgressRepo } from '@/entities/learning-progress';
 import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
@@ -245,10 +244,10 @@ const localIndices = ref<number[]>(props.cloze?.indices || []);
 const localMinimumInterval = ref<Duration | undefined>(props.cloze?.minimumInterval);
 const localPriority = ref(5);
 
-onMounted(async () => {
-  // Load priority from learning progress if cloze exists
-  if (props.cloze?.id) {
-    localPriority.value = await learningProgressRepo.getPriority(props.cloze.id);
+onMounted(() => {
+  // Load priority from entity
+  if (props.cloze?.priority !== undefined) {
+    localPriority.value = props.cloze.priority;
   }
 });
 

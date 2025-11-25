@@ -48,15 +48,11 @@ export const clozeRepo: ClozeContract = {
       return hasMinimumIntervalPassed(lastReviewDate, cloze.minimumInterval, now);
     });
 
-    // Use weighted selection based on priority
-    const weightedClozes: WeightedItem<Cloze>[] = dueClozes.map((cloze: Cloze) => {
-      const progress = progressRecords.find((p) => p.learningItemId === cloze.id);
-      const priority = progress?.priority ?? 5; // Default to 5 (medium priority)
-      return {
-        item: cloze,
-        weight: priority,
-      };
-    });
+    // Use weighted selection based on priority from entity
+    const weightedClozes: WeightedItem<Cloze>[] = dueClozes.map((cloze: Cloze) => ({
+      item: cloze,
+      weight: cloze.priority ?? 5, // Default to 5 (medium priority)
+    }));
 
     return weightedRandomChoice(weightedClozes);
   },
@@ -69,10 +65,10 @@ export const clozeRepo: ClozeContract = {
 
     const newClozes = allClozes.filter((c: Cloze) => !existingProgressIds.includes(c.id!));
 
-    // For new items without progress, default all to priority 5
+    // Use entity priority for new items
     const weightedClozes: WeightedItem<Cloze>[] = newClozes.map((cloze: Cloze) => ({
       item: cloze,
-      weight: 5, // Default priority for new items
+      weight: cloze.priority ?? 5, // Default to 5 (medium priority)
     }));
 
     return weightedRandomChoice(weightedClozes);

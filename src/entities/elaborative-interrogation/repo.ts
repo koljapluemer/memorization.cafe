@@ -50,15 +50,11 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
       return hasMinimumIntervalPassed(lastReviewDate, concept.minimumInterval, now);
     });
 
-    // Use weighted selection based on priority
-    const weightedConcepts: WeightedItem<ElaborativeInterrogationConcept>[] = dueConcepts.map((concept: ElaborativeInterrogationConcept) => {
-      const progress = progressRecords.find((p) => p.learningItemId === concept.id);
-      const priority = progress?.priority ?? 5; // Default to 5 (medium priority)
-      return {
-        item: concept,
-        weight: priority,
-      };
-    });
+    // Use weighted selection based on priority from entity
+    const weightedConcepts: WeightedItem<ElaborativeInterrogationConcept>[] = dueConcepts.map((concept: ElaborativeInterrogationConcept) => ({
+      item: concept,
+      weight: concept.priority ?? 5, // Default to 5 (medium priority)
+    }));
 
     return weightedRandomChoice(weightedConcepts);
   },
@@ -71,10 +67,10 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
 
     const newConcepts = allConcepts.filter((c: ElaborativeInterrogationConcept) => !existingProgressIds.includes(c.id!));
 
-    // For new items without progress, default all to priority 5
+    // Use entity priority for new items
     const weightedConcepts: WeightedItem<ElaborativeInterrogationConcept>[] = newConcepts.map((concept: ElaborativeInterrogationConcept) => ({
       item: concept,
-      weight: 5, // Default priority for new items
+      weight: concept.priority ?? 5, // Default to 5 (medium priority)
     }));
 
     return weightedRandomChoice(weightedConcepts);
