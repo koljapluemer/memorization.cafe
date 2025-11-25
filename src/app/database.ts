@@ -9,7 +9,15 @@ export interface Collection {
   description?: string;
 }
 
-export type Duration = "HOUR" | "DAY" | "TWO_DAYS" | "WEEK" | "MONTH" 
+export type Duration = "HOUR" | "DAY" | "TWO_DAYS" | "WEEK" | "MONTH"
+
+export type ElementModelsMap = {
+  [itemKey: string]: {
+    model: EbisuModel;
+    lastReviewTimestamp: Date;
+    addedAt: Date;
+  }
+}; 
 
 export interface SimpleFlashcard {
   id?: string;
@@ -91,6 +99,7 @@ export interface LearningProgress {
   listData?: {
     model: EbisuModel;
     lastReviewTimestamp: Date;
+    elementModels?: ElementModelsMap;
   };
 
   // Helper note for remembering the item

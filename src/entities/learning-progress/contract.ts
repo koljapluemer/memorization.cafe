@@ -1,7 +1,7 @@
 import type { Card } from 'ts-fsrs';
 import type { Model as EbisuModel } from 'ebisu-js';
 
-import type { LearningProgress } from '@/app/database';
+import type { LearningProgress, ElementModelsMap } from '@/app/database';
 
 export interface LearningProgressContract {
   getByLearningItemId(learningItemId: string): Promise<LearningProgress | undefined>;
@@ -18,6 +18,8 @@ export interface LearningProgressContract {
   // For items using ebisu.js (like lists)
   createEbisuProgress(learningItemId: string, itemType: 'list', initialModel: EbisuModel): Promise<string>;
   updateEbisuProgress(learningItemId: string, model: EbisuModel): Promise<void>;
+  createEbisuProgressWithElements(learningItemId: string, itemType: 'list', initialModel: EbisuModel, elementModels: ElementModelsMap): Promise<string>;
+  updateEbisuProgressWithElements(learningItemId: string, listModel: EbisuModel, elementModels: ElementModelsMap): Promise<void>;
 
   // General queries
   getAllProgressForItems(learningItemIds: string[]): Promise<LearningProgress[]>;

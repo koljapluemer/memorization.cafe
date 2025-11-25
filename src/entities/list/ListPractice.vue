@@ -88,9 +88,29 @@
         v-if="!revealed"
         class="space-y-4"
       >
+        <div
+          v-if="highRecallItems.size > 0"
+          class="mb-4 p-3 bg-base-200 rounded"
+        >
+          <div class="text-sm opacity-70 mb-2">
+            Items you know well ({{ highRecallItems.size }}):
+          </div>
+          <ul class="list-disc list-inside space-y-1">
+            <li
+              v-for="idx in Array.from(highRecallItems)"
+              :key="idx"
+              class="text-sm opacity-70"
+            >
+              <MarkdownText :text="list.items[idx] || ''" />
+            </li>
+          </ul>
+        </div>
+
         <div class="form-control w-full">
           <label class="label">
-            <span class="label-text">Enter items you remember:</span>
+            <span class="label-text">
+              Try to remember the {{ list.items.length - highRecallItems.size }} remaining items:
+            </span>
           </label>
           <div class="space-y-2">
             <div
@@ -137,13 +157,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import * as ebisu from 'ebisu-js';
-import type { Model as EbisuModel } from 'ebisu-js';
 import { Edit } from 'lucide-vue-next';
 
-import type { List } from '@/app/database';
+import type { List, ElementModelsMap } from '@/app/database';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { learningProgressRepo } from '@/entities/learning-progress';
 import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
+
+function normalizeItemKey(item: string): string {
+  return item.trim().toLowerCase();
+}
 
 const props = defineProps<{
   list: List;
@@ -165,6 +188,8 @@ const helperNote = ref('');
 const existingHelperNote = ref('');
 const isNewItem = ref(false);
 const editingNote = ref(false);
+const itemRecallProbabilities = ref<number[]>([]);
+const highRecallItems = ref<Set<number>>(new Set());
 
 onMounted(async () => {
   // Check if this is a new list
@@ -175,6 +200,25 @@ onMounted(async () => {
   if (progress?.helperNote) {
     existingHelperNote.value = progress.helperNote;
   }
+
+  // Calculate recall probabilities for each item
+  const now = new Date();
+  itemRecallProbabilities.value = props.list.items.map(item => {
+    const key = normalizeItemKey(item);
+    const elementData = progress?.listData?.elementModels?.[key];
+
+    if (!elementData) return 0.0; // New item
+
+    const elapsedHours = (now.getTime() - elementData.lastReviewTimestamp.getTime()) / (1000 * 60 * 60);
+    return ebisu.predictRecall(elementData.model, elapsedHours, true);
+  });
+
+  // Identify high-recall items (>0.9)
+  itemRecallProbabilities.value.forEach((recall, idx) => {
+    if (recall > 0.9) {
+      highRecallItems.value.add(idx);
+    }
+  });
 
   // Auto-reveal for new items
   if (isNewItem.value) {
@@ -192,10 +236,15 @@ function handleUserInputChange() {
 function handleReveal() {
   userAnswers.value = userInputItems.value.filter((item) => item.trim() !== '');
 
-  // Initialize remembered items array with pre-selected literal matches
-  rememberedItems.value = props.list.items.map((correctItem) =>
-    userAnswers.value.some((userItem) => userItem.trim().toLowerCase() === correctItem.trim().toLowerCase())
-  );
+  // Initialize remembered items array with pre-selected literal matches or high-recall items
+  rememberedItems.value = props.list.items.map((correctItem, idx) => {
+    const userAnswered = userAnswers.value.some(
+      (userItem) => userItem.trim().toLowerCase() === correctItem.trim().toLowerCase()
+    );
+    const highRecall = highRecallItems.value.has(idx);
+
+    return userAnswered || highRecall; // Pre-check if either condition met
+  });
 
   revealed.value = true;
 }
@@ -210,35 +259,70 @@ async function saveHelperNote() {
 
 async function handleComplete() {
   const progress = await learningProgressRepo.getByLearningItemId(props.list.id!);
+  const now = new Date();
 
-  // For new items, treat as 100% learned
-  let percentageCorrect: number;
-  if (isNewItem.value) {
-    percentageCorrect = 1.0;
-  } else {
-    const correctCount = rememberedItems.value.filter((remembered) => remembered).length;
-    const totalCount = props.list.items.length;
-    percentageCorrect = totalCount > 0 ? correctCount / totalCount : 0;
-  }
+  // 1. Update each element independently
+  const elementModels: ElementModelsMap = {};
 
-  let model: EbisuModel;
-  let elapsedHours: number;
+  props.list.items.forEach((item, idx) => {
+    const key = normalizeItemKey(item);
+    const wasRemembered = rememberedItems.value[idx];
+    const elementData = progress?.listData?.elementModels?.[key];
 
-  if (progress && progress.listData) {
-    model = progress.listData.model;
-    const lastReviewTime = new Date(progress.listData.lastReviewTimestamp);
-    elapsedHours = (new Date().getTime() - lastReviewTime.getTime()) / (1000 * 60 * 60);
-  } else {
-    model = ebisu.defaultModel(24);
-    elapsedHours = 24;
-  }
+    // Get current model or create default for new items
+    const currentModel = elementData?.model || ebisu.defaultModel(24);
+    const lastReview = elementData?.lastReviewTimestamp
+      ? new Date(elementData.lastReviewTimestamp)
+      : new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24hrs ago
 
-  const updatedModel = ebisu.updateRecall(model, percentageCorrect, 1, elapsedHours);
+    const elapsedHours = (now.getTime() - lastReview.getTime()) / (1000 * 60 * 60);
 
+    // Binary update: 1 if remembered, 0 if forgotten
+    const updatedModel = ebisu.updateRecall(
+      currentModel,
+      wasRemembered ? 1 : 0,
+      1,
+      elapsedHours
+    );
+
+    elementModels[key] = {
+      model: updatedModel,
+      lastReviewTimestamp: now,
+      addedAt: elementData?.addedAt || now
+    };
+  });
+
+  // 2. Update list-level model (for scheduling)
+  const percentageCorrect = isNewItem.value
+    ? 1.0
+    : rememberedItems.value.filter(x => x).length / props.list.items.length;
+
+  const listModel = progress?.listData?.model || ebisu.defaultModel(24);
+  const listElapsedHours = progress?.listData
+    ? (now.getTime() - new Date(progress.listData.lastReviewTimestamp).getTime()) / (1000 * 60 * 60)
+    : 24;
+
+  const updatedListModel = ebisu.updateRecall(
+    listModel,
+    percentageCorrect,
+    1,
+    listElapsedHours
+  );
+
+  // 3. Save both models
   if (progress) {
-    await learningProgressRepo.updateEbisuProgress(props.list.id!, updatedModel);
+    await learningProgressRepo.updateEbisuProgressWithElements(
+      props.list.id!,
+      updatedListModel,
+      elementModels
+    );
   } else {
-    await learningProgressRepo.createEbisuProgress(props.list.id!, 'list', updatedModel);
+    await learningProgressRepo.createEbisuProgressWithElements(
+      props.list.id!,
+      'list',
+      updatedListModel,
+      elementModels
+    );
   }
 
   // Save helper note if provided

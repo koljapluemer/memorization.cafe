@@ -3,7 +3,7 @@ import type { Model as EbisuModel } from 'ebisu-js';
 
 import type { LearningProgressContract } from './contract';
 
-import { db, type LearningProgress } from '@/app/database';
+import { db, type LearningProgress, type ElementModelsMap } from '@/app/database';
 
 export const learningProgressRepo: LearningProgressContract = {
   async getByLearningItemId(learningItemId: string): Promise<LearningProgress | undefined> {
@@ -104,6 +104,41 @@ export const learningProgressRepo: LearningProgressContract = {
     const existing = await this.getByLearningItemId(learningItemId);
     if (existing?.id) {
       await db.learningProgress.update(existing.id, { helperNote });
+    }
+  },
+
+  async createEbisuProgressWithElements(
+    learningItemId: string,
+    itemType: 'list',
+    initialModel: EbisuModel,
+    elementModels: ElementModelsMap
+  ): Promise<string> {
+    const id = await db.learningProgress.add({
+      learningItemId,
+      itemType,
+      listData: {
+        model: initialModel,
+        lastReviewTimestamp: new Date(),
+        elementModels,
+      },
+    } as LearningProgress);
+    return id;
+  },
+
+  async updateEbisuProgressWithElements(
+    learningItemId: string,
+    listModel: EbisuModel,
+    elementModels: ElementModelsMap
+  ): Promise<void> {
+    const existing = await this.getByLearningItemId(learningItemId);
+    if (existing?.id) {
+      await db.learningProgress.update(existing.id, {
+        listData: {
+          model: listModel,
+          lastReviewTimestamp: new Date(),
+          elementModels,
+        },
+      });
     }
   },
 };
