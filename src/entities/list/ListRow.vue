@@ -2,6 +2,9 @@
   <span>
     <strong>{{ list.name }}</strong>
     {{ ' - ' + formattedItems }}
+    <span v-if="list.priority && list.priority !== 5" class="text-light ml-2">
+      (priority: {{ list.priority }})
+    </span>
   </span>
 </template>
 

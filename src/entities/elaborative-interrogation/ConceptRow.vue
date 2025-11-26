@@ -4,6 +4,9 @@
     <template v-if="concept.description">
       {{ ' - ' + truncatedDescription }}
     </template>
+    <span v-if="concept.priority && concept.priority !== 5" class="text-light ml-2">
+      (priority: {{ concept.priority }})
+    </span>
   </span>
 </template>
 

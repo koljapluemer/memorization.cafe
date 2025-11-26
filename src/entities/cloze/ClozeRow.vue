@@ -1,5 +1,10 @@
 <template>
-  <span>{{ displayText }}</span>
+  <span>
+    {{ displayText }}
+    <span v-if="cloze.priority && cloze.priority !== 5" class="text-light ml-2">
+      (priority: {{ cloze.priority }})
+    </span>
+  </span>
 </template>
 
 <script setup lang="ts">

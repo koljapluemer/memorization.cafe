@@ -11,6 +11,9 @@
       class="inline mr-1"
     />
     {{ truncatedFront }} | {{ truncatedBack }}
+    <span v-if="flashcard.priority && flashcard.priority !== 5" class="text-light ml-2">
+      (priority: {{ flashcard.priority }})
+    </span>
   </span>
 </template>
 
