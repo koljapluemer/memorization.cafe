@@ -391,82 +391,20 @@ async function loadNextItem() {
       const selectedCollectionId = selectWeightedCollection(activeCollectionIds, 'concept');
 
       if (selectedCollectionId) {
-        if (prioritizeNew) {
-          const allProgress = await learningProgressRepo.getAllProgressForItems(
-            concepts.value.map(c => c.id!)
-          );
-          const existingIds = allProgress.map(p => p.learningItemId);
-          const newConcept = await conceptRepo.getRandomNew([selectedCollectionId], existingIds);
-          if (newConcept) {
-            nextItem = newConcept;
-            nextItemType = 'concept';
-            break;
-          }
-
-          const dueConcept = await conceptRepo.getRandomDue([selectedCollectionId], now);
-          if (dueConcept) {
-            nextItem = dueConcept;
-            nextItemType = 'concept';
-            break;
-          }
-        } else {
-          const dueConcept = await conceptRepo.getRandomDue([selectedCollectionId], now);
-          if (dueConcept) {
-            nextItem = dueConcept;
-            nextItemType = 'concept';
-            break;
-          }
-
-          const allProgress = await learningProgressRepo.getAllProgressForItems(
-            concepts.value.map(c => c.id!)
-          );
-          const existingIds = allProgress.map(p => p.learningItemId);
-          const newConcept = await conceptRepo.getRandomNew([selectedCollectionId], existingIds);
-          if (newConcept) {
-            nextItem = newConcept;
-            nextItemType = 'concept';
-            break;
-          }
+        const concept = await conceptRepo.getRandomFromLongestUnseen([selectedCollectionId], now);
+        if (concept) {
+          nextItem = concept;
+          nextItemType = 'concept';
+          break;
         }
       }
 
       // Fallback: pool all collections
-      if (prioritizeNew) {
-        const allProgress = await learningProgressRepo.getAllProgressForItems(
-          concepts.value.map(c => c.id!)
-        );
-        const existingIds = allProgress.map(p => p.learningItemId);
-        const newConcept = await conceptRepo.getRandomNew(activeCollectionIds, existingIds);
-        if (newConcept) {
-          nextItem = newConcept;
-          nextItemType = 'concept';
-          break;
-        }
-
-        const dueConcept = await conceptRepo.getRandomDue(activeCollectionIds, now);
-        if (dueConcept) {
-          nextItem = dueConcept;
-          nextItemType = 'concept';
-          break;
-        }
-      } else {
-        const dueConcept = await conceptRepo.getRandomDue(activeCollectionIds, now);
-        if (dueConcept) {
-          nextItem = dueConcept;
-          nextItemType = 'concept';
-          break;
-        }
-
-        const allProgress = await learningProgressRepo.getAllProgressForItems(
-          concepts.value.map(c => c.id!)
-        );
-        const existingIds = allProgress.map(p => p.learningItemId);
-        const newConcept = await conceptRepo.getRandomNew(activeCollectionIds, existingIds);
-        if (newConcept) {
-          nextItem = newConcept;
-          nextItemType = 'concept';
-          break;
-        }
+      const concept = await conceptRepo.getRandomFromLongestUnseen(activeCollectionIds, now);
+      if (concept) {
+        nextItem = concept;
+        nextItemType = 'concept';
+        break;
       }
     } else if (itemType === 'list') {
       // Try weighted collection selection first

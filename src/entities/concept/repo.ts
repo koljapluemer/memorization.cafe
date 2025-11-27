@@ -22,7 +22,8 @@ export const conceptRepo: ConceptContract = {
     return await db.concepts.get(id);
   },
 
-  async getRandomDue(collectionIds: string[], now: Date): Promise<Concept | null> {
+  async getRandomFromLongestUnseen(collectionIds: string[], now: Date, limit: number = 10): Promise<Concept | null> {
+    // 1. Get all concepts from active collections
     const allConcepts = await db.concepts
       .where('collectionId')
       .anyOf(collectionIds)
@@ -30,40 +31,55 @@ export const conceptRepo: ConceptContract = {
 
     if (allConcepts.length === 0) return null;
 
+    // 2. Get progress for all concepts
     const conceptIds = allConcepts.map((c: Concept) => c.id!);
     const progressRecords = await learningProgressRepo.getAllProgressForItems(conceptIds);
 
-    const dueConcepts = allConcepts.filter((concept: Concept) => {
-      const progress = progressRecords.find((p) => p.learningItemId === concept.id);
-      if (!progress) return false;
+    // 3. Build array with last seen timestamps
+    const conceptsWithTimestamp = allConcepts.map((concept: Concept) => {
+      const progress = progressRecords.find(p => p.learningItemId === concept.id);
 
-      const lastAnswer = progress.answers?.[progress.answers.length - 1];
-      if (!lastAnswer) return false;
+      // No progress = never seen (treat as oldest possible)
+      if (!progress || !progress.answers || progress.answers.length === 0) {
+        return {
+          concept,
+          lastSeenTime: 0  // Epoch = longest ago
+        };
+      }
 
-      // Only return concepts that were NOT answered today
-      return !isSameCalendarDay(new Date(lastAnswer.timestamp), now);
-    });
+      const lastAnswer = progress.answers[progress.answers.length - 1];
+      if (!lastAnswer) {
+        // No last answer, treat as never seen
+        return {
+          concept,
+          lastSeenTime: 0
+        };
+      }
 
-    if (dueConcepts.length === 0) return null;
+      const lastSeenDate = new Date(lastAnswer.timestamp);
 
-    // Return a random item
-    const randomIndex = Math.floor(Math.random() * dueConcepts.length);
-    return dueConcepts[randomIndex] ?? null;
-  },
+      // Filter out concepts seen today (daily limit)
+      if (isSameCalendarDay(lastSeenDate, now)) {
+        return null;  // Seen today, exclude
+      }
 
-  async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<Concept | null> {
-    const allConcepts = await db.concepts
-      .where('collectionId')
-      .anyOf(collectionIds)
-      .toArray();
+      return {
+        concept,
+        lastSeenTime: lastSeenDate.getTime()
+      };
+    }).filter(item => item !== null) as Array<{ concept: Concept; lastSeenTime: number }>;
 
-    const newConcepts = allConcepts.filter((c: Concept) => !existingProgressIds.includes(c.id!));
+    if (conceptsWithTimestamp.length === 0) return null;
 
-    if (newConcepts.length === 0) return null;
+    // 4. Sort by lastSeenTime ascending (oldest first)
+    conceptsWithTimestamp.sort((a, b) => a.lastSeenTime - b.lastSeenTime);
 
-    // Return a random item
-    const randomIndex = Math.floor(Math.random() * newConcepts.length);
-    return newConcepts[randomIndex] ?? null;
+    // 5. Take top N (default 10) longest unseen
+    const topUnseen = conceptsWithTimestamp.slice(0, Math.min(limit, conceptsWithTimestamp.length));
+
+    // 6. Pick randomly from top N
+    const randomIndex = Math.floor(Math.random() * topUnseen.length);
+    return topUnseen[randomIndex]?.concept ?? null;
   },
 
   async create(data: Omit<Concept, 'id'>): Promise<string> {
