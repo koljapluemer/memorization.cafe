@@ -69,6 +69,44 @@
       </button>
     </div>
 
+    <!-- Search and Sort Controls -->
+    <div class="flex gap-2 mb-4 flex-col sm:flex-row">
+      <input
+        type="text"
+        placeholder="Search items..."
+        class="input input-bordered input-sm flex-grow"
+        :value="searchQuery"
+        @input="emit('update:search-query', ($event.target as HTMLInputElement).value)"
+      >
+      <select
+        class="select select-bordered select-sm w-full sm:w-auto"
+        :value="sortBy"
+        @change="emit('update:sort-by', ($event.target as HTMLSelectElement).value)"
+      >
+        <option value="date-added-desc">
+          Date Added (Newest First)
+        </option>
+        <option value="date-added-asc">
+          Date Added (Oldest First)
+        </option>
+        <option value="last-practiced-desc">
+          Last Practiced (Recent First)
+        </option>
+        <option value="last-practiced-asc">
+          Last Practiced (Oldest First)
+        </option>
+        <option value="alphabetical-asc">
+          Alphabetical (A-Z)
+        </option>
+        <option value="alphabetical-desc">
+          Alphabetical (Z-A)
+        </option>
+        <option value="type">
+          By Type
+        </option>
+      </select>
+    </div>
+
     <!-- Learning Items Table -->
     <LearningItemsTable
       :items="learningItems"
@@ -97,6 +135,8 @@ import type { Collection } from '@/entities/collection/Collection';
 defineProps<{
   collection: Collection;
   learningItems: LearningItem[];
+  searchQuery: string;
+  sortBy: string;
 }>();
 
 const emit = defineEmits<{
@@ -111,6 +151,8 @@ const emit = defineEmits<{
   'show-progress': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
   'download-example-csv': [type: EntityType];
   'import-csv': [type: EntityType];
+  'update:search-query': [value: string];
+  'update:sort-by': [value: string];
 }>();
 
 function handleDownloadExample(type: EntityType) {

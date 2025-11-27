@@ -24,7 +24,11 @@
       <CollectionContent
         v-if="activeCollection"
         :collection="activeCollection"
-        :learning-items="allLearningItems"
+        :learning-items="filteredAndSortedItems"
+        :search-query="searchQuery"
+        :sort-by="sortOption"
+        @update:search-query="searchQuery = $event"
+        @update:sort-by="sortOption = $event"
         @edit-collection="openCollectionModal(activeCollection, false)"
         @share-collection="openShareModal"
         @delete-collection="handleDeleteCollection"
@@ -132,6 +136,16 @@ import { learningProgressRepo } from '@/entities/learning-progress/repo';
 import type { LearningProgress } from '@/entities/learning-progress/LearningProgress';
 import { useToast } from '@/app/toast';
 
+interface EnrichedLearningItem {
+  type: 'flashcard' | 'concept' | 'list' | 'cloze';
+  data: SimpleFlashcard | Concept | List | Cloze;
+  id: string;
+  progress: LearningProgress | null;
+  displayName: string;
+  lastPracticedDate: Date | null;
+  introductionDate: Date | null;
+}
+
 const collections = ref<Collection[]>([]);
 const openTabIds = ref<string[]>([]);
 const activeTabId = ref<string | null>(null);
@@ -169,7 +183,90 @@ const progressData = ref<LearningProgress | null>(null);
 const csvFileInputRef = ref<HTMLInputElement | null>(null);
 const pendingImportType = ref<EntityType | null>(null);
 
+const searchQuery = ref('');
+const sortOption = ref('date-added-desc');
+const enrichedItems = ref<EnrichedLearningItem[]>([]);
+const progressMap = ref<Map<string, LearningProgress>>(new Map());
+
 const { show: showToast } = useToast();
+
+async function updateEnrichedItems() {
+  if (!activeTabId.value) {
+    enrichedItems.value = [];
+    return;
+  }
+
+  // Get all item IDs for the active collection
+  const itemIds = allLearningItems.value
+    .map(item => item.id)
+    .filter((id): id is string => id !== undefined);
+
+  // Batch-fetch progress data
+  const progressRecords = await learningProgressRepo.getAllProgressForItems(itemIds);
+
+  // Create Map for O(1) lookup
+  const progressLookup = new Map<string, LearningProgress>();
+  progressRecords.forEach(p => {
+    if (p.learningItemId) {
+      progressLookup.set(p.learningItemId, p);
+    }
+  });
+  progressMap.value = progressLookup;
+
+  // Enrich items with progress data
+  enrichedItems.value = allLearningItems.value.map(item => {
+    const progress = item.id ? progressLookup.get(item.id) || null : null;
+
+    return {
+      ...item,
+      id: item.id!,
+      progress,
+      displayName: getDisplayName(item),
+      lastPracticedDate: getLastPracticedDate(item.type, progress),
+      introductionDate: progress?.introductionTimestamp || null,
+    };
+  });
+}
+
+function getDisplayName(item: { type: string; data: any }): string {
+  switch (item.type) {
+    case 'flashcard':
+      return (item.data as SimpleFlashcard).front;
+    case 'concept':
+      return (item.data as Concept).name;
+    case 'list':
+      return (item.data as List).name;
+    case 'cloze':
+      return (item.data as Cloze).content;
+    default:
+      return '';
+  }
+}
+
+function getLastPracticedDate(
+  type: string,
+  progress: LearningProgress | null
+): Date | null {
+  if (!progress) return null;
+
+  switch (type) {
+    case 'flashcard':
+    case 'cloze':
+      return progress.cardData?.due ? new Date(progress.cardData.due) : null;
+    case 'concept':
+      if (progress.answers && progress.answers.length > 0) {
+        const lastAnswer = progress.answers[progress.answers.length - 1];
+        return lastAnswer ? new Date(lastAnswer.timestamp) : null;
+      }
+      return null;
+    case 'list':
+      return progress.listData?.lastReviewTimestamp
+        ? new Date(progress.listData.lastReviewTimestamp)
+        : null;
+    default:
+      return null;
+  }
+}
 
 const activeCollection = computed(() =>
   collections.value.find(c => c.id === activeTabId.value)
@@ -210,10 +307,62 @@ const allLearningItems = computed(() => {
   return items;
 });
 
+const filteredAndSortedItems = computed(() => {
+  let items = [...enrichedItems.value];
+
+  // Apply search filter
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    items = items.filter(item =>
+      item.displayName.toLowerCase().includes(query)
+    );
+  }
+
+  // Apply sorting
+  items.sort((a, b) => {
+    switch (sortOption.value) {
+      case 'alphabetical-asc':
+        return a.displayName.localeCompare(b.displayName);
+
+      case 'alphabetical-desc':
+        return b.displayName.localeCompare(a.displayName);
+
+      case 'last-practiced-desc':
+        return compareDates(b.lastPracticedDate, a.lastPracticedDate);
+
+      case 'last-practiced-asc':
+        return compareDates(a.lastPracticedDate, b.lastPracticedDate);
+
+      case 'date-added-desc':
+        return compareDates(b.introductionDate, a.introductionDate);
+
+      case 'date-added-asc':
+        return compareDates(a.introductionDate, b.introductionDate);
+
+      case 'type':
+        return a.type.localeCompare(b.type);
+
+      default:
+        return 0;
+    }
+  });
+
+  return items;
+});
+
+function compareDates(a: Date | null, b: Date | null): number {
+  // Nulls sort to the end
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return b.getTime() - a.getTime();
+}
+
 onMounted(async () => {
   await loadCollections();
   await loadLearningItems();
   initializeTabs();
+  await updateEnrichedItems();
 });
 
 function initializeTabs() {
@@ -249,6 +398,15 @@ async function loadCollections() {
 watch(openTabIds, (newTabIds) => {
   saveOpenTabs(newTabIds);
 }, { deep: true });
+
+// Watch for changes that require re-enrichment
+watch(
+  [activeTabId, flashcards, concepts, lists, clozes],
+  () => {
+    updateEnrichedItems();
+  },
+  { deep: true }
+);
 
 async function loadLearningItems() {
   flashcards.value = await simpleFlashcardRepo.getAll();

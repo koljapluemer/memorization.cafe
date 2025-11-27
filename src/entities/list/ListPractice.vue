@@ -107,7 +107,7 @@
         </div>
 
         <div class="form-control w-full">
-          <label class="label">
+          <label class="label" v-if="list.items.length - highRecallItems.size !== 0">
             <span class="label-text">
               Try to remember the {{ list.items.length - highRecallItems.size }} remaining items:
             </span>
