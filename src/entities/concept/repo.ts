@@ -1,7 +1,7 @@
-import type { ElaborativeInterrogationContract } from './contract';
-
-import { db, type ElaborativeInterrogationConcept } from '@/app/database';
-import { learningProgressRepo } from '@/entities/learning-progress';
+import type { ConceptContract } from './contract';
+import type { Concept } from './Concept';
+import { db } from '@/app/database';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
@@ -11,20 +11,20 @@ function isSameCalendarDay(date1: Date, date2: Date): boolean {
     date1.getDate() === date2.getDate();
 }
 
-export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
-  async getAll(): Promise<ElaborativeInterrogationConcept[]> {
+export const conceptRepo: ConceptContract = {
+  async getAll(): Promise<Concept[]> {
     return await db.concepts.toArray();
   },
 
-  async getByCollectionId(collectionId: string): Promise<ElaborativeInterrogationConcept[]> {
+  async getByCollectionId(collectionId: string): Promise<Concept[]> {
     return await db.concepts.where('collectionId').equals(collectionId).toArray();
   },
 
-  async getById(id: string): Promise<ElaborativeInterrogationConcept | undefined> {
+  async getById(id: string): Promise<Concept | undefined> {
     return await db.concepts.get(id);
   },
 
-  async getRandomDue(collectionIds: string[], now: Date): Promise<ElaborativeInterrogationConcept | null> {
+  async getRandomDue(collectionIds: string[], now: Date): Promise<Concept | null> {
     const allConcepts = await db.concepts
       .where('collectionId')
       .anyOf(collectionIds)
@@ -32,10 +32,10 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
 
     if (allConcepts.length === 0) return null;
 
-    const conceptIds = allConcepts.map((c: ElaborativeInterrogationConcept) => c.id!);
+    const conceptIds = allConcepts.map((c: Concept) => c.id!);
     const progressRecords = await learningProgressRepo.getAllProgressForItems(conceptIds);
 
-    const dueConcepts = allConcepts.filter((concept: ElaborativeInterrogationConcept) => {
+    const dueConcepts = allConcepts.filter((concept: Concept) => {
       const progress = progressRecords.find((p) => p.learningItemId === concept.id);
       if (!progress) return false;
 
@@ -51,7 +51,7 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
     });
 
     // Use weighted selection based on priority from entity
-    const weightedConcepts: WeightedItem<ElaborativeInterrogationConcept>[] = dueConcepts.map((concept: ElaborativeInterrogationConcept) => ({
+    const weightedConcepts: WeightedItem<Concept>[] = dueConcepts.map((concept: Concept) => ({
       item: concept,
       weight: concept.priority ?? 5, // Default to 5 (medium priority)
     }));
@@ -59,16 +59,16 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
     return weightedRandomChoice(weightedConcepts);
   },
 
-  async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<ElaborativeInterrogationConcept | null> {
+  async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<Concept | null> {
     const allConcepts = await db.concepts
       .where('collectionId')
       .anyOf(collectionIds)
       .toArray();
 
-    const newConcepts = allConcepts.filter((c: ElaborativeInterrogationConcept) => !existingProgressIds.includes(c.id!));
+    const newConcepts = allConcepts.filter((c: Concept) => !existingProgressIds.includes(c.id!));
 
     // Use entity priority for new items
-    const weightedConcepts: WeightedItem<ElaborativeInterrogationConcept>[] = newConcepts.map((concept: ElaborativeInterrogationConcept) => ({
+    const weightedConcepts: WeightedItem<Concept>[] = newConcepts.map((concept: Concept) => ({
       item: concept,
       weight: concept.priority ?? 5, // Default to 5 (medium priority)
     }));
@@ -76,12 +76,12 @@ export const elaborativeInterrogationRepo: ElaborativeInterrogationContract = {
     return weightedRandomChoice(weightedConcepts);
   },
 
-  async create(data: Omit<ElaborativeInterrogationConcept, 'id'>): Promise<string> {
-    const id = await db.concepts.add(data as ElaborativeInterrogationConcept);
+  async create(data: Omit<Concept, 'id'>): Promise<string> {
+    const id = await db.concepts.add(data as Concept);
     return id;
   },
 
-  async update(id: string, data: Partial<ElaborativeInterrogationConcept>): Promise<void> {
+  async update(id: string, data: Partial<Concept>): Promise<void> {
     await db.concepts.update(id, data);
   },
 

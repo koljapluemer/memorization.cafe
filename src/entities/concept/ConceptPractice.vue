@@ -72,15 +72,15 @@
 import { ref, onMounted } from 'vue';
 import { Edit } from 'lucide-vue-next';
 
-import type { ElaborativeInterrogationConcept } from '@/app/database';
+import type { Concept } from './Concept';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { getRandomItem } from '@/dumb/array-utils';
-import { learningProgressRepo } from '@/entities/learning-progress';
-import { questionListRepo } from '@/entities/question-list';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
+import { questionListRepo } from '@/entities/question-list/repo';
 import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
 
 const props = defineProps<{
-  concept: ElaborativeInterrogationConcept;
+  concept: Concept;
 }>();
 
 const emit = defineEmits<{

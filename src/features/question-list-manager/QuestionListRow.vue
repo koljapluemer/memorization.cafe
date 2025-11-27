@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import type { QuestionList } from '@/entities/question-list';
+import type { QuestionList } from '@/entities/question-list/QuestionList';
 
 defineProps<{
   list: QuestionList;

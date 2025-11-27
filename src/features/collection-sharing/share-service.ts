@@ -1,11 +1,11 @@
 import { doc, setDoc } from 'firebase/firestore';
 
 import { firestore, isFirebaseConfigured } from '@/app/firebase';
-import { collectionRepo } from '@/entities/collection';
-import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
-import { elaborativeInterrogationRepo } from '@/entities/elaborative-interrogation';
-import { listRepo } from '@/entities/list';
-import { clozeRepo } from '@/entities/cloze';
+import { collectionRepo } from '@/entities/collection/repo';
+import { simpleFlashcardRepo } from '@/entities/simple-flashcard/repo';
+import { conceptRepo } from '@/entities/concept/repo';
+import { listRepo } from '@/entities/list/repo';
+import { clozeRepo } from '@/entities/cloze/repo';
 import type { ShareResult, SharedCollection } from './types';
 
 /**
@@ -51,7 +51,7 @@ export async function shareCollection(
   // Fetch all learning items
   const [flashcards, concepts, lists, clozes] = await Promise.all([
     simpleFlashcardRepo.getByCollectionId(collectionId),
-    elaborativeInterrogationRepo.getByCollectionId(collectionId),
+    conceptRepo.getByCollectionId(collectionId),
     listRepo.getByCollectionId(collectionId),
     clozeRepo.getByCollectionId(collectionId),
   ]);

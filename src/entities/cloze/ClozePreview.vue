@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import type { Cloze } from '@/app/database';
+import type { Cloze } from './Cloze';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { generateClozeText } from '@/dumb/cloze-utils';
 

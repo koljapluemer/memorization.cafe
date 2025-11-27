@@ -1,4 +1,4 @@
-import type { Cloze } from '@/app/database';
+import type { Cloze } from './Cloze';
 
 export interface ClozeContract {
   getAll(): Promise<Cloze[]>;

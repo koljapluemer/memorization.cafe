@@ -159,9 +159,10 @@ import { ref, onMounted } from 'vue';
 import * as ebisu from 'ebisu-js';
 import { Edit } from 'lucide-vue-next';
 
-import type { List, ElementModelsMap } from '@/app/database';
+import type { List } from './List';
+import type { ElementModelsMap } from '@/entities/learning-progress/LearningProgress';
 import MarkdownText from '@/dumb/MarkdownText.vue';
-import { learningProgressRepo } from '@/entities/learning-progress';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
 import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
 
 function normalizeItemKey(item: string): string {

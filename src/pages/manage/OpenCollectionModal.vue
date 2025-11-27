@@ -60,7 +60,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
-import type { Collection } from '@/entities/collection';
+import type { Collection } from '@/entities/collection/Collection';
 
 const props = defineProps<{
   collections: Collection[];

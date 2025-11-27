@@ -1,4 +1,7 @@
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
+import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
+import type { Concept } from '@/entities/concept/Concept';
+import type { List } from '@/entities/list/List';
+import type { Cloze } from '@/entities/cloze/Cloze';
 
 /**
  * Escapes a field for CSV format
@@ -41,7 +44,7 @@ export function exportFlashcardsToCsv(flashcards: SimpleFlashcard[]): string {
 /**
  * Exports concepts to CSV format
  */
-export function exportConceptsToCsv(concepts: ElaborativeInterrogationConcept[]): string {
+export function exportConceptsToCsv(concepts: Concept[]): string {
   const headers = ['name', 'description', 'minimumInterval'];
   const rows = concepts.map(c => [
     escapeCsvField(c.name),

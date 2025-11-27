@@ -21,7 +21,7 @@
 import { computed } from 'vue';
 import { CircleSlash, Image } from 'lucide-vue-next';
 
-import type { SimpleFlashcard } from '@/app/database';
+import type { SimpleFlashcard } from './SimpleFlashcard';
 
 const props = defineProps<{
   flashcard: SimpleFlashcard;

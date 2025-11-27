@@ -1,6 +1,6 @@
 import type { CollectionContract } from './contract';
-
-import { db, type Collection } from '@/app/database';
+import type { Collection } from './Collection';
+import { db } from '@/app/database';
 
 export const collectionRepo: CollectionContract = {
   async getAll(): Promise<Collection[]> {

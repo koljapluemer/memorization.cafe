@@ -1,4 +1,7 @@
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
+import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
+import type { Concept } from '@/entities/concept/Concept';
+import type { List } from '@/entities/list/List';
+import type { Cloze } from '@/entities/cloze/Cloze';
 
 export interface SharedCollection {
   shareId: string;
@@ -10,7 +13,7 @@ export interface SharedCollection {
   downloadCount: number;
   items: {
     flashcards: SimpleFlashcard[];
-    concepts: ElaborativeInterrogationConcept[];
+    concepts: Concept[];
     lists: List[];
     clozes: Cloze[];
   };

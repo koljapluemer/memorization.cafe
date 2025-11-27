@@ -1,8 +1,12 @@
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze, ClozeStrategy, Duration } from '@/app/database';
-import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
-import { elaborativeInterrogationRepo } from '@/entities/elaborative-interrogation';
-import { listRepo } from '@/entities/list';
-import { clozeRepo } from '@/entities/cloze';
+import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
+import type { Concept } from '@/entities/concept/Concept';
+import type { List } from '@/entities/list/List';
+import type { Cloze, ClozeStrategy } from '@/entities/cloze/Cloze';
+import type { Duration } from '@/dumb/Duration';
+import { simpleFlashcardRepo } from '@/entities/simple-flashcard/repo';
+import { conceptRepo } from '@/entities/concept/repo';
+import { listRepo } from '@/entities/list/repo';
+import { clozeRepo } from '@/entities/cloze/repo';
 
 export interface ImportResult {
   success: number;
@@ -74,12 +78,12 @@ export async function importConceptsFromCsv(
   const result: ImportResult = { success: 0, failed: 0, skipped: 0, errors: [] };
 
   // Fetch existing concepts in this collection
-  const existingConcepts = await elaborativeInterrogationRepo.getByCollectionId(collectionId);
+  const existingConcepts = await conceptRepo.getByCollectionId(collectionId);
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i]!;
     try {
-      const concept: Omit<ElaborativeInterrogationConcept, 'id'> = {
+      const concept: Omit<Concept, 'id'> = {
         collectionId,
         name: row.name || '',
         description: row.description || undefined,
@@ -96,7 +100,7 @@ export async function importConceptsFromCsv(
       if (isDuplicate) {
         result.skipped++;
       } else {
-        await elaborativeInterrogationRepo.create(concept);
+        await conceptRepo.create(concept);
         result.success++;
       }
     } catch (error) {

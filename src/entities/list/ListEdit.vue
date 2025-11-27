@@ -135,7 +135,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
-import type { List, Duration } from '@/app/database';
+import type { List } from './List';
+import type { Duration } from '@/dumb/Duration';
 import { shuffleArray } from '@/dumb/array-utils';
 import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 

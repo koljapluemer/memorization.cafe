@@ -1,9 +1,9 @@
 import { State } from 'ts-fsrs';
 
 import type { ClozeContract } from './contract';
-
-import { db, type Cloze } from '@/app/database';
-import { learningProgressRepo } from '@/entities/learning-progress';
+import type { Cloze } from './Cloze';
+import { db } from '@/app/database';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 

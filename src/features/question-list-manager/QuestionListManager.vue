@@ -36,7 +36,8 @@ import { ref, onMounted } from 'vue';
 import QuestionListRow from './QuestionListRow.vue';
 import QuestionListEditModal from './QuestionListEditModal.vue';
 
-import { questionListRepo, type QuestionList } from '@/entities/question-list';
+import { questionListRepo } from '@/entities/question-list/repo';
+import type { QuestionList } from '@/entities/question-list/QuestionList';
 import { useToast } from '@/app/toast';
 
 const questionLists = ref<QuestionList[]>([]);

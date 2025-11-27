@@ -1,4 +1,4 @@
-import type { QuestionList } from '@/app/database';
+import type { QuestionList } from './QuestionList';
 
 export interface QuestionListContract {
   getAll(): Promise<QuestionList[]>;

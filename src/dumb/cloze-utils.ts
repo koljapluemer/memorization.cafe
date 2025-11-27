@@ -1,4 +1,4 @@
-import type { ClozeStrategy } from '@/app/database';
+import type { ClozeStrategy } from '@/entities/cloze/Cloze';
 
 // Thresholds for progressive difficulty
 export const CLOZE_THRESHOLD_CONSECUTIVE_2 = 0.7;

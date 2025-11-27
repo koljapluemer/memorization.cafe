@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Duration } from '@/app/database';
+import type { Duration } from '@/dumb/Duration';
 
 defineProps<{
   modelValue?: Duration;

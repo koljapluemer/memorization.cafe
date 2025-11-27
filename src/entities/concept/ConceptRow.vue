@@ -13,10 +13,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import type { ElaborativeInterrogationConcept } from '@/app/database';
+import type { Concept } from './Concept';
 
 const props = defineProps<{
-  concept: ElaborativeInterrogationConcept;
+  concept: Concept;
 }>();
 
 function truncate(text: string, maxLength: number = 40): string {

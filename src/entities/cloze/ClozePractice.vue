@@ -107,10 +107,10 @@ import { ref, computed } from 'vue';
 import { fsrs, Rating, createEmptyCard } from 'ts-fsrs';
 import { Edit } from 'lucide-vue-next';
 
-import type { Cloze } from '@/app/database';
+import type { Cloze } from './Cloze';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { generateClozeText } from '@/dumb/cloze-utils';
-import { learningProgressRepo } from '@/entities/learning-progress';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
 import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
 
 const props = defineProps<{

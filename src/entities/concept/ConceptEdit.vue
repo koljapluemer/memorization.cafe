@@ -91,13 +91,14 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
-import type { ElaborativeInterrogationConcept, Duration } from '@/app/database';
-import { questionListRepo } from '@/entities/question-list';
-import type { QuestionList } from '@/entities/question-list';
+import type { Concept } from './Concept';
+import type { Duration } from '@/dumb/Duration';
+import { questionListRepo } from '@/entities/question-list/repo';
+import type { QuestionList } from '@/entities/question-list/QuestionList';
 import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
-  concept?: ElaborativeInterrogationConcept;
+  concept?: Concept;
 }>();
 
 const emit = defineEmits<{

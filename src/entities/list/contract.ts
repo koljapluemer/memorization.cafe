@@ -1,4 +1,4 @@
-import type { List } from '@/app/database';
+import type { List } from './List';
 
 export interface ListContract {
   getAll(): Promise<List[]>;

@@ -14,10 +14,10 @@
 </template>
 
 <script setup lang="ts">
-import type { ElaborativeInterrogationConcept } from '@/app/database';
+import type { Concept } from './Concept';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 
 defineProps<{
-  concept: ElaborativeInterrogationConcept;
+  concept: Concept;
 }>();
 </script>

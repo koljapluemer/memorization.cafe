@@ -77,7 +77,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import type { Collection } from '@/entities/collection';
+import type { Collection } from '@/entities/collection/Collection';
 
 defineProps<{
   existingCollections: Collection[];

@@ -11,9 +11,9 @@
         @disable="handleDisable"
         @filter="openFilterModal"
       />
-      <ElaborativeInterrogationPractice
+      <ConceptPractice
         v-else-if="currentItemType === 'concept'"
-        :concept="currentItem as ElaborativeInterrogationConcept"
+        :concept="currentItem as Concept"
         @complete="loadNextItem"
         @skip="loadNextItem"
         @edit="handleEdit"
@@ -77,13 +77,21 @@ import FilterModal from './FilterModal.vue';
 import { loadFilters, saveFilters, type PracticeFilters } from './filter-storage';
 import LearningItemEditModal from '@/pages/manage/LearningItemEditModal.vue';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
-import { collectionRepo, type Collection } from '@/entities/collection';
-import { elaborativeInterrogationRepo, ElaborativeInterrogationPractice } from '@/entities/elaborative-interrogation';
-import { learningProgressRepo } from '@/entities/learning-progress';
-import { simpleFlashcardRepo, SimpleFlashcardPractice } from '@/entities/simple-flashcard';
-import { listRepo, ListPractice } from '@/entities/list';
-import { clozeRepo, ClozePractice } from '@/entities/cloze';
+import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
+import type { Concept } from '@/entities/concept/Concept';
+import type { List } from '@/entities/list/List';
+import type { Cloze } from '@/entities/cloze/Cloze';
+import type { Collection } from '@/entities/collection/Collection';
+import { collectionRepo } from '@/entities/collection/repo';
+import { conceptRepo } from '@/entities/concept/repo';
+import ConceptPractice from '@/entities/concept/ConceptPractice.vue';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
+import { simpleFlashcardRepo } from '@/entities/simple-flashcard/repo';
+import SimpleFlashcardPractice from '@/entities/simple-flashcard/FlashcardPractice.vue';
+import { listRepo } from '@/entities/list/repo';
+import ListPractice from '@/entities/list/ListPractice.vue';
+import { clozeRepo } from '@/entities/cloze/repo';
+import ClozePractice from '@/entities/cloze/ClozePractice.vue';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 
 
@@ -93,17 +101,17 @@ const filterModalRef = ref<InstanceType<typeof FilterModal> | null>(null);
 const editModalRef = ref<InstanceType<typeof LearningItemEditModal> | null>(null);
 
 const flashcards = ref<SimpleFlashcard[]>([]);
-const concepts = ref<ElaborativeInterrogationConcept[]>([]);
+const concepts = ref<Concept[]>([]);
 const lists = ref<List[]>([]);
 const clozes = ref<Cloze[]>([]);
 
-const currentItem = ref<SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze | null>(null);
+const currentItem = ref<SimpleFlashcard | Concept | List | Cloze | null>(null);
 const currentItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze' | null>(null);
 
 onMounted(async () => {
   collections.value = await collectionRepo.getAll();
   flashcards.value = await simpleFlashcardRepo.getAll();
-  concepts.value = await elaborativeInterrogationRepo.getAll();
+  concepts.value = await conceptRepo.getAll();
   lists.value = await listRepo.getAll();
   clozes.value = await clozeRepo.getAll();
   await loadNextItem();
@@ -264,21 +272,21 @@ async function loadNextItem() {
             concepts.value.map(c => c.id!)
           );
           const existingIds = allProgress.map(p => p.learningItemId);
-          const newConcept = await elaborativeInterrogationRepo.getRandomNew([selectedCollectionId], existingIds);
+          const newConcept = await conceptRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newConcept) {
             currentItem.value = newConcept;
             currentItemType.value = 'concept';
             return;
           }
 
-          const dueConcept = await elaborativeInterrogationRepo.getRandomDue([selectedCollectionId], now);
+          const dueConcept = await conceptRepo.getRandomDue([selectedCollectionId], now);
           if (dueConcept) {
             currentItem.value = dueConcept;
             currentItemType.value = 'concept';
             return;
           }
         } else {
-          const dueConcept = await elaborativeInterrogationRepo.getRandomDue([selectedCollectionId], now);
+          const dueConcept = await conceptRepo.getRandomDue([selectedCollectionId], now);
           if (dueConcept) {
             currentItem.value = dueConcept;
             currentItemType.value = 'concept';
@@ -289,7 +297,7 @@ async function loadNextItem() {
             concepts.value.map(c => c.id!)
           );
           const existingIds = allProgress.map(p => p.learningItemId);
-          const newConcept = await elaborativeInterrogationRepo.getRandomNew([selectedCollectionId], existingIds);
+          const newConcept = await conceptRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newConcept) {
             currentItem.value = newConcept;
             currentItemType.value = 'concept';
@@ -304,21 +312,21 @@ async function loadNextItem() {
           concepts.value.map(c => c.id!)
         );
         const existingIds = allProgress.map(p => p.learningItemId);
-        const newConcept = await elaborativeInterrogationRepo.getRandomNew(activeCollectionIds, existingIds);
+        const newConcept = await conceptRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newConcept) {
           currentItem.value = newConcept;
           currentItemType.value = 'concept';
           return;
         }
 
-        const dueConcept = await elaborativeInterrogationRepo.getRandomDue(activeCollectionIds, now);
+        const dueConcept = await conceptRepo.getRandomDue(activeCollectionIds, now);
         if (dueConcept) {
           currentItem.value = dueConcept;
           currentItemType.value = 'concept';
           return;
         }
       } else {
-        const dueConcept = await elaborativeInterrogationRepo.getRandomDue(activeCollectionIds, now);
+        const dueConcept = await conceptRepo.getRandomDue(activeCollectionIds, now);
         if (dueConcept) {
           currentItem.value = dueConcept;
           currentItemType.value = 'concept';
@@ -329,7 +337,7 @@ async function loadNextItem() {
           concepts.value.map(c => c.id!)
         );
         const existingIds = allProgress.map(p => p.learningItemId);
-        const newConcept = await elaborativeInterrogationRepo.getRandomNew(activeCollectionIds, existingIds);
+        const newConcept = await conceptRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newConcept) {
           currentItem.value = newConcept;
           currentItemType.value = 'concept';
@@ -528,7 +536,7 @@ async function handleSaveEdit(data: unknown) {
   if (currentItemType.value === 'flashcard') {
     await simpleFlashcardRepo.update(currentItem.value.id, plainData as Partial<SimpleFlashcard>);
   } else if (currentItemType.value === 'concept') {
-    await elaborativeInterrogationRepo.update(currentItem.value.id, plainData as Partial<ElaborativeInterrogationConcept>);
+    await conceptRepo.update(currentItem.value.id, plainData as Partial<Concept>);
   } else if (currentItemType.value === 'list') {
     await listRepo.update(currentItem.value.id, plainData as Partial<List>);
   } else if (currentItemType.value === 'cloze') {
@@ -546,7 +554,7 @@ async function reloadCurrentItem() {
     const updated = await simpleFlashcardRepo.getById(currentItem.value.id);
     if (updated) currentItem.value = updated;
   } else if (currentItemType.value === 'concept') {
-    const updated = await elaborativeInterrogationRepo.getById(currentItem.value.id);
+    const updated = await conceptRepo.getById(currentItem.value.id);
     if (updated) currentItem.value = updated;
   } else if (currentItemType.value === 'list') {
     const updated = await listRepo.getById(currentItem.value.id);
@@ -569,7 +577,7 @@ async function handleDelete() {
   if (currentItemType.value === 'flashcard') {
     await simpleFlashcardRepo.delete(itemId);
   } else if (currentItemType.value === 'concept') {
-    await elaborativeInterrogationRepo.delete(itemId);
+    await conceptRepo.delete(itemId);
   } else if (currentItemType.value === 'list') {
     await listRepo.delete(itemId);
   } else if (currentItemType.value === 'cloze') {

@@ -216,7 +216,8 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 
-import type { Cloze, ClozeStrategy, Duration } from '@/app/database';
+import type { Cloze, ClozeStrategy } from './Cloze';
+import type { Duration } from '@/dumb/Duration';
 import { generateClozeText, getDefaultIndices } from '@/dumb/cloze-utils';
 import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 

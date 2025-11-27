@@ -1,4 +1,4 @@
-import type { Duration } from '@/app/database';
+import type { Duration } from './Duration';
 
 /**
  * Converts a Duration enum to milliseconds
@@ -17,6 +17,8 @@ export function durationToMilliseconds(duration: Duration | undefined): number {
       return 7 * 24 * 60 * 60 * 1000;
     case 'MONTH':
       return 30 * 24 * 60 * 60 * 1000;
+    default:
+      return 0;
   }
 }
 

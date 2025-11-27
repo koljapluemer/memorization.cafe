@@ -1,7 +1,7 @@
 import type { SimpleFlashcardContract } from './contract';
-
-import { db, type SimpleFlashcard } from '@/app/database';
-import { learningProgressRepo } from '@/entities/learning-progress';
+import type { SimpleFlashcard } from './SimpleFlashcard';
+import { db } from '@/app/database';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 

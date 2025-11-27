@@ -87,8 +87,11 @@ import LearningItemsTable, { type LearningItem } from './LearningItemsTable.vue'
 import CsvImportExportTable from './CsvImportExportTable.vue';
 import type { EntityType } from './csv-utils';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
-import type { Collection } from '@/entities/collection';
+import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
+import type { Concept } from '@/entities/concept/Concept';
+import type { List } from '@/entities/list/List';
+import type { Cloze } from '@/entities/cloze/Cloze';
+import type { Collection } from '@/entities/collection/Collection';
 
 defineProps<{
   collection: Collection;
@@ -100,10 +103,10 @@ const emit = defineEmits<{
   'share-collection': [];
   'delete-collection': [];
   'add-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze'];
-  'edit-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
+  'edit-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
   'delete-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', id: string];
-  'preview-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
-  'move-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
+  'preview-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
+  'move-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
   'download-example-csv': [type: EntityType];
   'import-csv': [type: EntityType];
 }>();

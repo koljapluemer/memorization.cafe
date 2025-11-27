@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import type { List } from '@/app/database';
+import type { List } from './List';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 
 defineProps<{

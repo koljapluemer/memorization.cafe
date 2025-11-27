@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { Plus, FolderOpen, X } from 'lucide-vue-next';
 
-import type { Collection } from '@/entities/collection';
+import type { Collection } from '@/entities/collection/Collection';
 
 defineProps<{
   openTabs: Collection[];

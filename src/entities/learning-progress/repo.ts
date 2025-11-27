@@ -2,8 +2,8 @@ import type { Card } from 'ts-fsrs';
 import type { Model as EbisuModel } from 'ebisu-js';
 
 import type { LearningProgressContract } from './contract';
-
-import { db, type LearningProgress, type ElementModelsMap } from '@/app/database';
+import type { LearningProgress, ElementModelsMap } from './LearningProgress';
+import { db } from '@/app/database';
 
 export const learningProgressRepo: LearningProgressContract = {
   async getByLearningItemId(learningItemId: string): Promise<LearningProgress | undefined> {

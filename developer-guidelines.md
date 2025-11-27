@@ -18,6 +18,8 @@ Instead, use the following folder structure (inspired by Feature-Sliced Design)
 - `meta-features`: for complex features interacting in turn with multiple `features`. One folder per meta-feature. May only import from below, and not from other meta-features
 - `pages`: One folder per page (a page is something used by the `router.ts` file). If functionality is ONLY used on a given page, put it in the page folder, do not create features or meta-features that are only used by one single page.
 
+Do not use `index.ts` file reexporting components, simply export directly.
+
 ## Guidelines
 
 - Keep design lean. Use cards, wrapper divs and containers ONLY when necessary

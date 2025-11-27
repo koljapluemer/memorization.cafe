@@ -1,8 +1,8 @@
-import { collectionRepo } from '@/entities/collection';
-import { simpleFlashcardRepo } from '@/entities/simple-flashcard';
-import { elaborativeInterrogationRepo } from '@/entities/elaborative-interrogation';
-import { listRepo } from '@/entities/list';
-import { clozeRepo } from '@/entities/cloze';
+import { collectionRepo } from '@/entities/collection/repo';
+import { simpleFlashcardRepo } from '@/entities/simple-flashcard/repo';
+import { conceptRepo } from '@/entities/concept/repo';
+import { listRepo } from '@/entities/list/repo';
+import { clozeRepo } from '@/entities/cloze/repo';
 import type { SharedCollection } from '@/features/collection-sharing';
 
 /**
@@ -36,7 +36,7 @@ export async function downloadCollection(sharedCollection: SharedCollection): Pr
   for (const concept of sharedCollection.items.concepts) {
     const { id, ...conceptData } = concept;
     importPromises.push(
-      elaborativeInterrogationRepo.create({
+      conceptRepo.create({
         ...conceptData,
         collectionId,
       })

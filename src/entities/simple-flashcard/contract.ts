@@ -1,4 +1,4 @@
-import type { SimpleFlashcard } from '@/app/database';
+import type { SimpleFlashcard } from './SimpleFlashcard';
 
 export interface SimpleFlashcardContract {
   getAll(): Promise<SimpleFlashcard[]>;

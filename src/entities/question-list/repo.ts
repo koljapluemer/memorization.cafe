@@ -1,6 +1,6 @@
 import type { QuestionListContract } from './contract';
-
-import { db, type QuestionList } from '@/app/database';
+import type { QuestionList } from './QuestionList';
+import { db } from '@/app/database';
 
 const DEFAULT_QUESTIONS = [
   'When does this concept apply?',

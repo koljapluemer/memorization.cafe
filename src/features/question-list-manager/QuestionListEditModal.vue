@@ -94,8 +94,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import type { QuestionList } from '@/entities/question-list';
-import { questionListRepo } from '@/entities/question-list';
+import type { QuestionList } from '@/entities/question-list/QuestionList';
+import { questionListRepo } from '@/entities/question-list/repo';
 import { useToast } from '@/app/toast';
 
 const props = defineProps<{

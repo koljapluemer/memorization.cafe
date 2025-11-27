@@ -1,9 +1,9 @@
 import * as ebisu from 'ebisu-js';
 
 import type { ListContract } from './contract';
-
-import { db, type List } from '@/app/database';
-import { learningProgressRepo } from '@/entities/learning-progress';
+import type { List } from './List';
+import { db } from '@/app/database';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
 import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
 import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 

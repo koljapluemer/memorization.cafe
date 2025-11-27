@@ -185,9 +185,9 @@ import { ref, computed, onMounted } from 'vue';
 import { fsrs, Rating, createEmptyCard } from 'ts-fsrs';
 import { Check, Edit } from 'lucide-vue-next';
 
-import type { SimpleFlashcard } from '@/app/database';
+import type { SimpleFlashcard } from './SimpleFlashcard';
 import MarkdownText from '@/dumb/MarkdownText.vue';
-import { learningProgressRepo } from '@/entities/learning-progress';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
 import PracticeLayout from '@/pages/practice/PracticeLayout.vue';
 
 const props = defineProps<{

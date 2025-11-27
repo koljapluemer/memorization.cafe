@@ -136,7 +136,7 @@ import { ref, computed, onMounted } from 'vue';
 
 import type { PracticeFilters } from './filter-storage';
 
-import type { Collection } from '@/entities/collection';
+import type { Collection } from '@/entities/collection/Collection';
 
 const props = defineProps<{
   collections: Collection[];

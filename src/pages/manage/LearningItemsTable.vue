@@ -11,9 +11,9 @@
               v-if="item.type === 'flashcard'"
               :flashcard="item.data as SimpleFlashcard"
             />
-            <ElaborativeInterrogationRow
+            <ConceptRow
               v-else-if="item.type === 'concept'"
-              :concept="item.data as ElaborativeInterrogationConcept"
+              :concept="item.data as Concept"
             />
             <ListRow
               v-else-if="item.type === 'list'"
@@ -61,15 +61,18 @@
 <script setup lang="ts">
 import { Edit, Trash2, Eye, FolderInput } from 'lucide-vue-next';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
-import { ElaborativeInterrogationRow } from '@/entities/elaborative-interrogation';
-import { SimpleFlashcardRow } from '@/entities/simple-flashcard';
-import { ListRow } from '@/entities/list';
-import { ClozeRow } from '@/entities/cloze';
+import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
+import type { Concept } from '@/entities/concept/Concept';
+import type { List } from '@/entities/list/List';
+import type { Cloze } from '@/entities/cloze/Cloze';
+import ConceptRow from '@/entities/concept/ConceptRow.vue';
+import SimpleFlashcardRow from '@/entities/simple-flashcard/FlashcardRow.vue';
+import ListRow from '@/entities/list/ListRow.vue';
+import ClozeRow from '@/entities/cloze/ClozeRow.vue';
 
 export interface LearningItem {
   type: 'flashcard' | 'concept' | 'list' | 'cloze';
-  data: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze;
+  data: SimpleFlashcard | Concept | List | Cloze;
   id?: string;
 }
 
@@ -78,9 +81,9 @@ defineProps<{
 }>();
 
 defineEmits<{
-  edit: [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
+  edit: [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
   delete: [type: 'flashcard' | 'concept' | 'list' | 'cloze', id: string];
-  preview: [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
-  move: [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze];
+  preview: [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
+  move: [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
 }>();
 </script>

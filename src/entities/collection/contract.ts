@@ -1,4 +1,4 @@
-import type { Collection } from '@/app/database';
+import type { Collection } from './Collection';
 
 export interface CollectionContract {
   getAll(): Promise<Collection[]>;

@@ -209,7 +209,8 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 
-import type { SimpleFlashcard, Duration } from '@/app/database';
+import type { SimpleFlashcard } from './SimpleFlashcard';
+import type { Duration } from '@/dumb/Duration';
 import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 import { resizeImage } from '@/dumb/image-utils';
 

@@ -11,7 +11,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import type { List } from '@/app/database';
+import type { List } from './List';
 
 const props = defineProps<{
   list: List;

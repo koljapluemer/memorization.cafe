@@ -15,10 +15,10 @@
         @update="handleUpdate"
       />
 
-      <ElaborativeInterrogationEdit
+      <ConceptEdit
         v-else-if="itemType === 'concept'"
         :key="componentKey"
-        :concept="(item as ElaborativeInterrogationConcept | undefined)"
+        :concept="(item as Concept | undefined)"
         @update="handleUpdate"
       />
 
@@ -64,15 +64,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
-import type { SimpleFlashcard, ElaborativeInterrogationConcept, List, Cloze } from '@/app/database';
-import { ElaborativeInterrogationEdit } from '@/entities/elaborative-interrogation';
-import { SimpleFlashcardEdit } from '@/entities/simple-flashcard';
-import { ListEdit } from '@/entities/list';
-import { ClozeEdit } from '@/entities/cloze';
+import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
+import type { Concept } from '@/entities/concept/Concept';
+import type { List } from '@/entities/list/List';
+import type { Cloze } from '@/entities/cloze/Cloze';
+import ConceptEdit from '@/entities/concept/ConceptEdit.vue';
+import SimpleFlashcardEdit from '@/entities/simple-flashcard/FlashcardEdit.vue';
+import ListEdit from '@/entities/list/ListEdit.vue';
+import ClozeEdit from '@/entities/cloze/ClozeEdit.vue';
 
 const props = defineProps<{
   itemType: 'flashcard' | 'concept' | 'list' | 'cloze';
-  item?: SimpleFlashcard | ElaborativeInterrogationConcept | List | Cloze;
+  item?: SimpleFlashcard | Concept | List | Cloze;
   isNew?: boolean;
 }>();
 
