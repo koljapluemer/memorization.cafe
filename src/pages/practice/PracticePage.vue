@@ -1,56 +1,78 @@
 <template>
   <div class="max-w-2xl mx-auto">
-    <div v-if="currentItem && currentItemType">
-      <SimpleFlashcardPractice
-        v-if="currentItemType === 'flashcard'"
-        :flashcard="currentItem as SimpleFlashcard"
-        @complete="loadNextItem"
-        @skip="loadNextItem"
-        @edit="handleEdit"
-        @delete="handleDelete"
-        @disable="handleDisable"
-        @filter="openFilterModal"
-      />
-      <ConceptPractice
-        v-else-if="currentItemType === 'concept'"
-        :concept="currentItem as Concept"
-        @complete="loadNextItem"
-        @skip="loadNextItem"
-        @edit="handleEdit"
-        @delete="handleDelete"
-        @filter="openFilterModal"
-      />
-      <ListPractice
-        v-else-if="currentItemType === 'list'"
-        :list="currentItem as List"
-        @complete="loadNextItem"
-        @skip="loadNextItem"
-        @edit="handleEdit"
-        @delete="handleDelete"
-        @filter="openFilterModal"
-      />
-      <ClozePractice
-        v-else-if="currentItemType === 'cloze'"
-        :cloze="currentItem as Cloze"
-        @complete="loadNextItem"
-        @skip="loadNextItem"
-        @edit="handleEdit"
-        @delete="handleDelete"
-        @filter="openFilterModal"
-      />
-    </div>
-
-    <div
-      v-else
-      class="text-center py-12"
+    <Transition
+      name="fade"
+      mode="out-in"
     >
-      <p class="text-lg">
-        No items to practice right now.
-      </p>
-      <p class="text-sm text-gray-500 mt-2">
-        Add some learning items or adjust your filters.
-      </p>
-    </div>
+      <div
+        v-if="currentItem && currentItemType && !isLoading"
+        :key="currentItem.id"
+      >
+        <SimpleFlashcardPractice
+          v-if="currentItemType === 'flashcard'"
+          :flashcard="currentItem as SimpleFlashcard"
+          @complete="loadNextItem"
+          @skip="loadNextItem"
+          @edit="handleEdit"
+          @delete="handleDelete"
+          @disable="handleDisable"
+          @filter="openFilterModal"
+        />
+        <ConceptPractice
+          v-else-if="currentItemType === 'concept'"
+          :concept="currentItem as Concept"
+          @complete="loadNextItem"
+          @skip="loadNextItem"
+          @edit="handleEdit"
+          @delete="handleDelete"
+          @filter="openFilterModal"
+        />
+        <ListPractice
+          v-else-if="currentItemType === 'list'"
+          :list="currentItem as List"
+          @complete="loadNextItem"
+          @skip="loadNextItem"
+          @edit="handleEdit"
+          @delete="handleDelete"
+          @filter="openFilterModal"
+        />
+        <ClozePractice
+          v-else-if="currentItemType === 'cloze'"
+          :cloze="currentItem as Cloze"
+          @complete="loadNextItem"
+          @skip="loadNextItem"
+          @edit="handleEdit"
+          @delete="handleDelete"
+          @filter="openFilterModal"
+        />
+      </div>
+
+      <div
+        v-else-if="isLoading"
+        key="loading"
+        class="text-center py-12"
+      >
+        <Transition name="fade">
+          <span
+            v-if="showSpinner"
+            class="loading loading-spinner loading-lg"
+          />
+        </Transition>
+      </div>
+
+      <div
+        v-else
+        key="empty"
+        class="text-center py-12"
+      >
+        <p class="text-lg">
+          No items to practice right now.
+        </p>
+        <p class="text-sm text-gray-500 mt-2">
+          Add some learning items or adjust your filters.
+        </p>
+      </div>
+    </Transition>
 
     <FilterModal
       ref="filterModalRef"
@@ -108,6 +130,10 @@ const clozes = ref<Cloze[]>([]);
 const currentItem = ref<SimpleFlashcard | Concept | List | Cloze | null>(null);
 const currentItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze' | null>(null);
 
+const isLoading = ref(false);
+const showSpinner = ref(false);
+let spinnerTimeout: ReturnType<typeof setTimeout> | null = null;
+
 onMounted(async () => {
   collections.value = await collectionRepo.getAll();
   flashcards.value = await simpleFlashcardRepo.getAll();
@@ -149,8 +175,24 @@ function selectWeightedCollection(
 }
 
 async function loadNextItem() {
-  currentItem.value = null;
-  currentItemType.value = null;
+  // Clear any existing spinner timeout
+  if (spinnerTimeout) {
+    clearTimeout(spinnerTimeout);
+    spinnerTimeout = null;
+  }
+
+  // Start loading state
+  isLoading.value = true;
+  showSpinner.value = false;
+
+  // Show spinner after 500ms if still loading
+  spinnerTimeout = setTimeout(() => {
+    showSpinner.value = true;
+  }, 500);
+
+  // Store temp variables for the next item
+  let nextItem: SimpleFlashcard | Concept | List | Cloze | null = null;
+  let nextItemType: 'flashcard' | 'concept' | 'list' | 'cloze' | null = null;
 
   // Calculate active collections (all collections minus excluded ones)
   const allCollectionIds = collections.value.map(c => c.id!);
@@ -158,7 +200,15 @@ async function loadNextItem() {
     id => !filters.value.excludedCollectionIds.includes(id)
   );
 
-  if (activeCollectionIds.length === 0) return;
+  if (activeCollectionIds.length === 0) {
+    // Clear spinner and finish loading
+    if (spinnerTimeout) clearTimeout(spinnerTimeout);
+    showSpinner.value = false;
+    isLoading.value = false;
+    currentItem.value = null;
+    currentItemType.value = null;
+    return;
+  }
 
   // Calculate active types (all types minus excluded ones)
   const allTypes: ('flashcard' | 'concept' | 'list' | 'cloze')[] = ['flashcard', 'concept', 'list', 'cloze'];
@@ -166,7 +216,15 @@ async function loadNextItem() {
     type => !filters.value.excludedItemTypes.includes(type)
   );
 
-  if (activeTypes.length === 0) return;
+  if (activeTypes.length === 0) {
+    // Clear spinner and finish loading
+    if (spinnerTimeout) clearTimeout(spinnerTimeout);
+    showSpinner.value = false;
+    isLoading.value = false;
+    currentItem.value = null;
+    currentItemType.value = null;
+    return;
+  }
 
   // 15% chance to prioritize new items over due items
   const prioritizeNew = Math.random() < 0.15;
@@ -189,25 +247,25 @@ async function loadNextItem() {
           const existingIds = allProgress.map(p => p.learningItemId);
           const newFlashcard = await simpleFlashcardRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newFlashcard) {
-            currentItem.value = newFlashcard;
-            currentItemType.value = 'flashcard';
-            return;
+            nextItem = newFlashcard;
+            nextItemType = 'flashcard';
+            break;
           }
 
           // Fallback to due flashcard from selected collection
           const dueFlashcard = await simpleFlashcardRepo.getRandomDue([selectedCollectionId], now);
           if (dueFlashcard) {
-            currentItem.value = dueFlashcard;
-            currentItemType.value = 'flashcard';
-            return;
+            nextItem = dueFlashcard;
+            nextItemType = 'flashcard';
+            break;
           }
         } else {
           // Try to get a due flashcard from selected collection
           const dueFlashcard = await simpleFlashcardRepo.getRandomDue([selectedCollectionId], now);
           if (dueFlashcard) {
-            currentItem.value = dueFlashcard;
-            currentItemType.value = 'flashcard';
-            return;
+            nextItem = dueFlashcard;
+            nextItemType = 'flashcard';
+            break;
           }
 
           // Fallback to new flashcard from selected collection
@@ -217,9 +275,9 @@ async function loadNextItem() {
           const existingIds = allProgress.map(p => p.learningItemId);
           const newFlashcard = await simpleFlashcardRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newFlashcard) {
-            currentItem.value = newFlashcard;
-            currentItemType.value = 'flashcard';
-            return;
+            nextItem = newFlashcard;
+            nextItemType = 'flashcard';
+            break;
           }
         }
       }
@@ -232,23 +290,23 @@ async function loadNextItem() {
         const existingIds = allProgress.map(p => p.learningItemId);
         const newFlashcard = await simpleFlashcardRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newFlashcard) {
-          currentItem.value = newFlashcard;
-          currentItemType.value = 'flashcard';
-          return;
+          nextItem = newFlashcard;
+          nextItemType = 'flashcard';
+          break;
         }
 
         const dueFlashcard = await simpleFlashcardRepo.getRandomDue(activeCollectionIds, now);
         if (dueFlashcard) {
-          currentItem.value = dueFlashcard;
-          currentItemType.value = 'flashcard';
-          return;
+          nextItem = dueFlashcard;
+          nextItemType = 'flashcard';
+          break;
         }
       } else {
         const dueFlashcard = await simpleFlashcardRepo.getRandomDue(activeCollectionIds, now);
         if (dueFlashcard) {
-          currentItem.value = dueFlashcard;
-          currentItemType.value = 'flashcard';
-          return;
+          nextItem = dueFlashcard;
+          nextItemType = 'flashcard';
+          break;
         }
 
         const allProgress = await learningProgressRepo.getAllProgressForItems(
@@ -257,9 +315,9 @@ async function loadNextItem() {
         const existingIds = allProgress.map(p => p.learningItemId);
         const newFlashcard = await simpleFlashcardRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newFlashcard) {
-          currentItem.value = newFlashcard;
-          currentItemType.value = 'flashcard';
-          return;
+          nextItem = newFlashcard;
+          nextItemType = 'flashcard';
+          break;
         }
       }
     } else if (itemType === 'concept') {
@@ -274,23 +332,23 @@ async function loadNextItem() {
           const existingIds = allProgress.map(p => p.learningItemId);
           const newConcept = await conceptRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newConcept) {
-            currentItem.value = newConcept;
-            currentItemType.value = 'concept';
-            return;
+            nextItem = newConcept;
+            nextItemType = 'concept';
+            break;
           }
 
           const dueConcept = await conceptRepo.getRandomDue([selectedCollectionId], now);
           if (dueConcept) {
-            currentItem.value = dueConcept;
-            currentItemType.value = 'concept';
-            return;
+            nextItem = dueConcept;
+            nextItemType = 'concept';
+            break;
           }
         } else {
           const dueConcept = await conceptRepo.getRandomDue([selectedCollectionId], now);
           if (dueConcept) {
-            currentItem.value = dueConcept;
-            currentItemType.value = 'concept';
-            return;
+            nextItem = dueConcept;
+            nextItemType = 'concept';
+            break;
           }
 
           const allProgress = await learningProgressRepo.getAllProgressForItems(
@@ -299,9 +357,9 @@ async function loadNextItem() {
           const existingIds = allProgress.map(p => p.learningItemId);
           const newConcept = await conceptRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newConcept) {
-            currentItem.value = newConcept;
-            currentItemType.value = 'concept';
-            return;
+            nextItem = newConcept;
+            nextItemType = 'concept';
+            break;
           }
         }
       }
@@ -314,23 +372,23 @@ async function loadNextItem() {
         const existingIds = allProgress.map(p => p.learningItemId);
         const newConcept = await conceptRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newConcept) {
-          currentItem.value = newConcept;
-          currentItemType.value = 'concept';
-          return;
+          nextItem = newConcept;
+          nextItemType = 'concept';
+          break;
         }
 
         const dueConcept = await conceptRepo.getRandomDue(activeCollectionIds, now);
         if (dueConcept) {
-          currentItem.value = dueConcept;
-          currentItemType.value = 'concept';
-          return;
+          nextItem = dueConcept;
+          nextItemType = 'concept';
+          break;
         }
       } else {
         const dueConcept = await conceptRepo.getRandomDue(activeCollectionIds, now);
         if (dueConcept) {
-          currentItem.value = dueConcept;
-          currentItemType.value = 'concept';
-          return;
+          nextItem = dueConcept;
+          nextItemType = 'concept';
+          break;
         }
 
         const allProgress = await learningProgressRepo.getAllProgressForItems(
@@ -339,9 +397,9 @@ async function loadNextItem() {
         const existingIds = allProgress.map(p => p.learningItemId);
         const newConcept = await conceptRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newConcept) {
-          currentItem.value = newConcept;
-          currentItemType.value = 'concept';
-          return;
+          nextItem = newConcept;
+          nextItemType = 'concept';
+          break;
         }
       }
     } else if (itemType === 'list') {
@@ -356,23 +414,23 @@ async function loadNextItem() {
           const existingIds = allProgress.map(p => p.learningItemId);
           const newList = await listRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newList) {
-            currentItem.value = newList;
-            currentItemType.value = 'list';
-            return;
+            nextItem = newList;
+            nextItemType = 'list';
+            break;
           }
 
           const dueList = await listRepo.getRandomDue([selectedCollectionId], now);
           if (dueList) {
-            currentItem.value = dueList;
-            currentItemType.value = 'list';
-            return;
+            nextItem = dueList;
+            nextItemType = 'list';
+            break;
           }
         } else {
           const dueList = await listRepo.getRandomDue([selectedCollectionId], now);
           if (dueList) {
-            currentItem.value = dueList;
-            currentItemType.value = 'list';
-            return;
+            nextItem = dueList;
+            nextItemType = 'list';
+            break;
           }
 
           const allProgress = await learningProgressRepo.getAllProgressForItems(
@@ -381,9 +439,9 @@ async function loadNextItem() {
           const existingIds = allProgress.map(p => p.learningItemId);
           const newList = await listRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newList) {
-            currentItem.value = newList;
-            currentItemType.value = 'list';
-            return;
+            nextItem = newList;
+            nextItemType = 'list';
+            break;
           }
         }
       }
@@ -396,23 +454,23 @@ async function loadNextItem() {
         const existingIds = allProgress.map(p => p.learningItemId);
         const newList = await listRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newList) {
-          currentItem.value = newList;
-          currentItemType.value = 'list';
-          return;
+          nextItem = newList;
+          nextItemType = 'list';
+          break;
         }
 
         const dueList = await listRepo.getRandomDue(activeCollectionIds, now);
         if (dueList) {
-          currentItem.value = dueList;
-          currentItemType.value = 'list';
-          return;
+          nextItem = dueList;
+          nextItemType = 'list';
+          break;
         }
       } else {
         const dueList = await listRepo.getRandomDue(activeCollectionIds, now);
         if (dueList) {
-          currentItem.value = dueList;
-          currentItemType.value = 'list';
-          return;
+          nextItem = dueList;
+          nextItemType = 'list';
+          break;
         }
 
         const allProgress = await learningProgressRepo.getAllProgressForItems(
@@ -421,9 +479,9 @@ async function loadNextItem() {
         const existingIds = allProgress.map(p => p.learningItemId);
         const newList = await listRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newList) {
-          currentItem.value = newList;
-          currentItemType.value = 'list';
-          return;
+          nextItem = newList;
+          nextItemType = 'list';
+          break;
         }
       }
     } else if (itemType === 'cloze') {
@@ -438,23 +496,23 @@ async function loadNextItem() {
           const existingIds = allProgress.map(p => p.learningItemId);
           const newCloze = await clozeRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newCloze) {
-            currentItem.value = newCloze;
-            currentItemType.value = 'cloze';
-            return;
+            nextItem = newCloze;
+            nextItemType = 'cloze';
+            break;
           }
 
           const dueCloze = await clozeRepo.getRandomDue([selectedCollectionId], now);
           if (dueCloze) {
-            currentItem.value = dueCloze;
-            currentItemType.value = 'cloze';
-            return;
+            nextItem = dueCloze;
+            nextItemType = 'cloze';
+            break;
           }
         } else {
           const dueCloze = await clozeRepo.getRandomDue([selectedCollectionId], now);
           if (dueCloze) {
-            currentItem.value = dueCloze;
-            currentItemType.value = 'cloze';
-            return;
+            nextItem = dueCloze;
+            nextItemType = 'cloze';
+            break;
           }
 
           const allProgress = await learningProgressRepo.getAllProgressForItems(
@@ -463,9 +521,9 @@ async function loadNextItem() {
           const existingIds = allProgress.map(p => p.learningItemId);
           const newCloze = await clozeRepo.getRandomNew([selectedCollectionId], existingIds);
           if (newCloze) {
-            currentItem.value = newCloze;
-            currentItemType.value = 'cloze';
-            return;
+            nextItem = newCloze;
+            nextItemType = 'cloze';
+            break;
           }
         }
       }
@@ -478,23 +536,23 @@ async function loadNextItem() {
         const existingIds = allProgress.map(p => p.learningItemId);
         const newCloze = await clozeRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newCloze) {
-          currentItem.value = newCloze;
-          currentItemType.value = 'cloze';
-          return;
+          nextItem = newCloze;
+          nextItemType = 'cloze';
+          break;
         }
 
         const dueCloze = await clozeRepo.getRandomDue(activeCollectionIds, now);
         if (dueCloze) {
-          currentItem.value = dueCloze;
-          currentItemType.value = 'cloze';
-          return;
+          nextItem = dueCloze;
+          nextItemType = 'cloze';
+          break;
         }
       } else {
         const dueCloze = await clozeRepo.getRandomDue(activeCollectionIds, now);
         if (dueCloze) {
-          currentItem.value = dueCloze;
-          currentItemType.value = 'cloze';
-          return;
+          nextItem = dueCloze;
+          nextItemType = 'cloze';
+          break;
         }
 
         const allProgress = await learningProgressRepo.getAllProgressForItems(
@@ -503,13 +561,20 @@ async function loadNextItem() {
         const existingIds = allProgress.map(p => p.learningItemId);
         const newCloze = await clozeRepo.getRandomNew(activeCollectionIds, existingIds);
         if (newCloze) {
-          currentItem.value = newCloze;
-          currentItemType.value = 'cloze';
-          return;
+          nextItem = newCloze;
+          nextItemType = 'cloze';
+          break;
         }
       }
     }
   }
+
+  // Update state with the next item and finish loading
+  if (spinnerTimeout) clearTimeout(spinnerTimeout);
+  showSpinner.value = false;
+  currentItem.value = nextItem;
+  currentItemType.value = nextItemType;
+  isLoading.value = false;
 }
 
 function openFilterModal() {
@@ -600,4 +665,16 @@ async function handleDisable() {
   await loadNextItem();
 }
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
 
