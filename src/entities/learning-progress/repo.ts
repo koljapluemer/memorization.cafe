@@ -141,4 +141,34 @@ export const learningProgressRepo: LearningProgressContract = {
       });
     }
   },
+
+  async createIntroductionProgress(
+    learningItemId: string,
+    itemType: 'flashcard' | 'cloze' | 'list',
+    initialData?: { card?: Card; listModel?: EbisuModel; elementModels?: ElementModelsMap }
+  ): Promise<string> {
+    const progress: LearningProgress = {
+      learningItemId,
+      itemType,
+      introductionTimestamp: new Date(),
+    };
+
+    // Initialize scheduling models based on item type
+    if (itemType === 'flashcard' || itemType === 'cloze') {
+      if (initialData?.card) {
+        progress.cardData = initialData.card;
+      }
+    } else if (itemType === 'list') {
+      if (initialData?.listModel) {
+        progress.listData = {
+          model: initialData.listModel,
+          lastReviewTimestamp: new Date(),
+          elementModels: initialData.elementModels || {},
+        };
+      }
+    }
+
+    const id = await db.learningProgress.add(progress);
+    return id;
+  },
 };

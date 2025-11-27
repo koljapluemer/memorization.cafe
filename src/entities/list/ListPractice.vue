@@ -144,6 +144,14 @@
         class="flex justify-center"
       >
         <button
+          v-if="isNewItem"
+          class="btn btn-primary"
+          @click="handleRememberCommitment"
+        >
+          I will try to remember
+        </button>
+        <button
+          v-else
           class="btn btn-primary"
           @click="handleComplete"
         >
@@ -256,6 +264,36 @@ async function saveHelperNote() {
     existingHelperNote.value = helperNote.value.trim();
     editingNote.value = false;
   }
+}
+
+async function handleRememberCommitment() {
+  const now = new Date();
+
+  // Initialize element models for all items in the list
+  const elementModels: ElementModelsMap = {};
+  props.list.items.forEach((item) => {
+    const key = normalizeItemKey(item);
+    elementModels[key] = {
+      model: ebisu.defaultModel(24),
+      lastReviewTimestamp: now,
+      addedAt: now
+    };
+  });
+
+  // Initialize list-level model
+  const listModel = ebisu.defaultModel(24);
+
+  await learningProgressRepo.createIntroductionProgress(
+    props.list.id!,
+    'list',
+    { listModel, elementModels }
+  );
+
+  if (helperNote.value.trim()) {
+    await learningProgressRepo.updateHelperNote(props.list.id!, helperNote.value.trim());
+  }
+
+  emit('complete');
 }
 
 async function handleComplete() {

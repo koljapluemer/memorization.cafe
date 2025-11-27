@@ -74,29 +74,38 @@
         class="flex gap-2 justify-center"
       >
         <button
-          class="btn"
-          @click="handleRating(Rating.Again)"
+          v-if="isNewItem"
+          class="btn btn-primary"
+          @click="handleRememberCommitment"
         >
-          Again
+          I will try to remember
         </button>
-        <button
-          class="btn"
-          @click="handleRating(Rating.Hard)"
-        >
-          Hard
-        </button>
-        <button
-          class="btn"
-          @click="handleRating(Rating.Good)"
-        >
-          Good
-        </button>
-        <button
-          class="btn"
-          @click="handleRating(Rating.Easy)"
-        >
-          Easy
-        </button>
+        <template v-else>
+          <button
+            class="btn"
+            @click="handleRating(Rating.Again)"
+          >
+            Again
+          </button>
+          <button
+            class="btn"
+            @click="handleRating(Rating.Hard)"
+          >
+            Hard
+          </button>
+          <button
+            class="btn"
+            @click="handleRating(Rating.Good)"
+          >
+            Good
+          </button>
+          <button
+            class="btn"
+            @click="handleRating(Rating.Easy)"
+          >
+            Easy
+          </button>
+        </template>
       </div>
     </template>
   </PracticeLayout>
@@ -255,6 +264,22 @@ async function saveHelperNote() {
     existingHelperNote.value = helperNote.value.trim();
     editingNote.value = false;
   }
+}
+
+async function handleRememberCommitment() {
+  const initialCard = createEmptyCard();
+
+  await learningProgressRepo.createIntroductionProgress(
+    props.cloze.id!,
+    'cloze',
+    { card: initialCard }
+  );
+
+  if (helperNote.value.trim()) {
+    await learningProgressRepo.updateHelperNote(props.cloze.id!, helperNote.value.trim());
+  }
+
+  emit('complete');
 }
 
 async function handleRating(rating: Rating) {

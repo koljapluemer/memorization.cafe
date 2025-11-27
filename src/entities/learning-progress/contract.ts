@@ -27,4 +27,11 @@ export interface LearningProgressContract {
 
   // Helper note
   updateHelperNote(learningItemId: string, helperNote: string): Promise<void>;
+
+  // Introduction progress (for new items before full practice)
+  createIntroductionProgress(
+    learningItemId: string,
+    itemType: 'flashcard' | 'cloze' | 'list',
+    initialData?: { card?: Card; listModel?: EbisuModel; elementModels?: ElementModelsMap }
+  ): Promise<string>;
 }

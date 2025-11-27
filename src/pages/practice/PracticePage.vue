@@ -134,12 +134,37 @@ const isLoading = ref(false);
 const showSpinner = ref(false);
 let spinnerTimeout: ReturnType<typeof setTimeout> | null = null;
 
+const recentlyIntroducedItems = ref<Array<{
+  itemId: string;
+  itemType: 'flashcard' | 'cloze' | 'list';
+  introducedAt: Date;
+  exercisesSince: number;
+}>>([]);
+
+const lastShownItemId = ref<string | null>(null);
+const REINTRODUCTION_WINDOW = 10;
+
 onMounted(async () => {
   collections.value = await collectionRepo.getAll();
   flashcards.value = await simpleFlashcardRepo.getAll();
   concepts.value = await conceptRepo.getAll();
   lists.value = await listRepo.getAll();
   clozes.value = await clozeRepo.getAll();
+
+  // Load recently introduced items queue from localStorage
+  const stored = localStorage.getItem('recentlyIntroducedItems');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      recentlyIntroducedItems.value = parsed.map((item: any) => ({
+        ...item,
+        introducedAt: new Date(item.introducedAt)
+      }));
+    } catch (e) {
+      console.error('Failed to parse recentlyIntroducedItems from localStorage', e);
+    }
+  }
+
   await loadNextItem();
 });
 
@@ -193,6 +218,47 @@ async function loadNextItem() {
   // Store temp variables for the next item
   let nextItem: SimpleFlashcard | Concept | List | Cloze | null = null;
   let nextItemType: 'flashcard' | 'concept' | 'list' | 'cloze' | null = null;
+
+  // Increment exercise counters for all tracked items
+  recentlyIntroducedItems.value.forEach(item => {
+    item.exercisesSince++;
+  });
+
+  // Check for items needing guaranteed re-practice (>= 10 exercises since intro)
+  const itemNeedingReintro = recentlyIntroducedItems.value.find(
+    item => item.exercisesSince >= REINTRODUCTION_WINDOW
+  );
+
+  if (itemNeedingReintro) {
+    // Force select this item
+    if (itemNeedingReintro.itemType === 'flashcard') {
+      nextItem = (await simpleFlashcardRepo.getById(itemNeedingReintro.itemId)) ?? null;
+      nextItemType = 'flashcard';
+    } else if (itemNeedingReintro.itemType === 'cloze') {
+      nextItem = (await clozeRepo.getById(itemNeedingReintro.itemId)) ?? null;
+      nextItemType = 'cloze';
+    } else if (itemNeedingReintro.itemType === 'list') {
+      nextItem = (await listRepo.getById(itemNeedingReintro.itemId)) ?? null;
+      nextItemType = 'list';
+    }
+
+    // Remove from queue
+    recentlyIntroducedItems.value = recentlyIntroducedItems.value.filter(
+      item => item.itemId !== itemNeedingReintro.itemId
+    );
+    localStorage.setItem('recentlyIntroducedItems', JSON.stringify(recentlyIntroducedItems.value));
+
+    // Finish loading early (even if item was deleted)
+    if (spinnerTimeout) clearTimeout(spinnerTimeout);
+    showSpinner.value = false;
+    currentItem.value = nextItem;
+    currentItemType.value = nextItemType;
+    isLoading.value = false;
+    return;
+  }
+
+  // Store last shown item to prevent immediate doubling
+  lastShownItemId.value = currentItem.value?.id ?? null;
 
   // Calculate active collections (all collections minus excluded ones)
   const allCollectionIds = collections.value.map(c => c.id!);
@@ -566,6 +632,35 @@ async function loadNextItem() {
           break;
         }
       }
+    }
+  }
+
+  // Check if newly loaded item should be added to queue
+  if (nextItem?.id && nextItemType && nextItemType !== 'concept') {
+    const progress = await learningProgressRepo.getByLearningItemId(nextItem.id);
+
+    // If has introductionTimestamp but no scheduling data, add to queue
+    if (progress?.introductionTimestamp && !progress.cardData && !progress.listData) {
+      recentlyIntroducedItems.value.push({
+        itemId: nextItem.id,
+        itemType: nextItemType,
+        introducedAt: progress.introductionTimestamp,
+        exercisesSince: 0
+      });
+      localStorage.setItem('recentlyIntroducedItems', JSON.stringify(recentlyIntroducedItems.value));
+    }
+
+    // Clean up queue - remove items that now have full progress
+    const cleanedQueue = [];
+    for (const item of recentlyIntroducedItems.value) {
+      const itemProgress = await learningProgressRepo.getByLearningItemId(item.itemId);
+      if (itemProgress && !itemProgress.cardData && !itemProgress.listData) {
+        cleanedQueue.push(item);
+      }
+    }
+    if (cleanedQueue.length !== recentlyIntroducedItems.value.length) {
+      recentlyIntroducedItems.value = cleanedQueue;
+      localStorage.setItem('recentlyIntroducedItems', JSON.stringify(recentlyIntroducedItems.value));
     }
   }
 

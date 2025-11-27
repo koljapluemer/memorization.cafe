@@ -36,4 +36,7 @@ export interface LearningProgress {
 
   // Helper note for remembering the item
   helperNote?: string;
+
+  // When item was first introduced to user (before full practice)
+  introductionTimestamp?: Date;
 }

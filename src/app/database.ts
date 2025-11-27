@@ -86,6 +86,16 @@ export class MemorizationDatabase extends Dexie {
       questionLists: '@id, name, isDefault',
     });
 
+    this.version(8).stores({
+      collections: '@id, name',
+      flashcards: '@id, collectionId, isDisabled, priority',
+      concepts: '@id, collectionId, name, priority',
+      lists: '@id, collectionId, name, priority',
+      clozes: '@id, collectionId, priority',
+      learningProgress: '@id, learningItemId, itemType, owner, introductionTimestamp',
+      questionLists: '@id, name, isDefault',
+    });
+
     // Configure Dexie Cloud
     const cloudUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
     if (cloudUrl) {
