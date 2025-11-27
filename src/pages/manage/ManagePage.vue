@@ -33,6 +33,7 @@
         @delete-item="handleDeleteItem"
         @preview-item="openPreviewModal"
         @move-item="openMoveItemModal"
+        @show-progress="openProgressModal"
         @download-example-csv="handleDownloadExampleCsv"
         @import-csv="handleImportCsvClick"
       />
@@ -89,6 +90,14 @@
       ref="shareModalRef"
       :collection-id="activeCollection.id"
     />
+
+    <LearningProgressModal
+      v-if="progressItem"
+      ref="progressModalRef"
+      :item-type="progressItemType"
+      :item="progressItem"
+      :progress="progressData"
+    />
   </div>
 </template>
 
@@ -103,6 +112,7 @@ import LearningItemEditModal from './LearningItemEditModal.vue';
 import PreviewModal from './PreviewModal.vue';
 import MoveItemModal from './MoveItemModal.vue';
 import OpenCollectionModal from './OpenCollectionModal.vue';
+import LearningProgressModal from './LearningProgressModal.vue';
 import { ShareCollectionModal } from '@/features/collection-sharing';
 import { loadOpenTabs, saveOpenTabs } from './tab-storage';
 import { generateExampleCsv, downloadCsv, parseCsv, validateCsvData, readFileAsText, type EntityType } from './csv-utils';
@@ -118,6 +128,8 @@ import { conceptRepo } from '@/entities/concept/repo';
 import { simpleFlashcardRepo } from '@/entities/simple-flashcard/repo';
 import { listRepo } from '@/entities/list/repo';
 import { clozeRepo } from '@/entities/cloze/repo';
+import { learningProgressRepo } from '@/entities/learning-progress/repo';
+import type { LearningProgress } from '@/entities/learning-progress/LearningProgress';
 import { useToast } from '@/app/toast';
 
 const collections = ref<Collection[]>([]);
@@ -135,6 +147,7 @@ const previewModalRef = ref<InstanceType<typeof PreviewModal> | null>(null);
 const moveItemModalRef = ref<InstanceType<typeof MoveItemModal> | null>(null);
 const openCollectionModalRef = ref<InstanceType<typeof OpenCollectionModal> | null>(null);
 const shareModalRef = ref<InstanceType<typeof ShareCollectionModal> | null>(null);
+const progressModalRef = ref<InstanceType<typeof LearningProgressModal> | null>(null);
 
 const editingCollection = ref<Collection | undefined>(undefined);
 const isNewCollection = ref(false);
@@ -148,6 +161,10 @@ const previewItem = ref<SimpleFlashcard | Concept | List | Cloze | null>(null);
 
 const movingItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze'>('flashcard');
 const movingItem = ref<SimpleFlashcard | Concept | List | Cloze | null>(null);
+
+const progressItemType = ref<'flashcard' | 'concept' | 'list' | 'cloze'>('flashcard');
+const progressItem = ref<SimpleFlashcard | Concept | List | Cloze | null>(null);
+const progressData = ref<LearningProgress | null>(null);
 
 const csvFileInputRef = ref<HTMLInputElement | null>(null);
 const pendingImportType = ref<EntityType | null>(null);
@@ -415,6 +432,22 @@ function openMoveItemModal(type: 'flashcard' | 'concept' | 'list' | 'cloze', ite
   movingItemType.value = type;
   movingItem.value = item;
   moveItemModalRef.value?.open();
+}
+
+async function openProgressModal(
+  type: 'flashcard' | 'concept' | 'list' | 'cloze',
+  item: SimpleFlashcard | Concept | List | Cloze
+) {
+  if (!item.id) return;
+
+  progressItemType.value = type;
+  progressItem.value = item;
+
+  // Fetch progress data from IndexedDB
+  const progress = await learningProgressRepo.getByLearningItemId(item.id);
+  progressData.value = progress || null;
+
+  progressModalRef.value?.open();
 }
 
 async function handleMoveToCollection(targetCollectionId: string) {

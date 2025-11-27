@@ -34,6 +34,12 @@
               </button>
               <button
                 class="btn btn-ghost btn-sm"
+                @click="$emit('show-progress', item.type, item.data)"
+              >
+                <ChartBar :size="16" />
+              </button>
+              <button
+                class="btn btn-ghost btn-sm"
                 @click="$emit('move', item.type, item.data)"
               >
                 <FolderInput :size="16" />
@@ -59,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { Edit, Trash2, Eye, FolderInput } from 'lucide-vue-next';
+import { Edit, Trash2, Eye, FolderInput, ChartBar } from 'lucide-vue-next';
 
 import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
 import type { Concept } from '@/entities/concept/Concept';
@@ -85,5 +91,6 @@ defineEmits<{
   delete: [type: 'flashcard' | 'concept' | 'list' | 'cloze', id: string];
   preview: [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
   move: [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
+  'show-progress': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
 }>();
 </script>

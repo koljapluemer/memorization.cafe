@@ -76,6 +76,7 @@
       @delete="(type, id) => $emit('delete-item', type, id)"
       @preview="(type, item) => $emit('preview-item', type, item)"
       @move="(type, item) => $emit('move-item', type, item)"
+      @show-progress="(type, item) => $emit('show-progress', type, item)"
     />
   </div>
 </template>
@@ -107,6 +108,7 @@ const emit = defineEmits<{
   'delete-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', id: string];
   'preview-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
   'move-item': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
+  'show-progress': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
   'download-example-csv': [type: EntityType];
   'import-csv': [type: EntityType];
 }>();
