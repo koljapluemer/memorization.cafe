@@ -176,50 +176,14 @@
       </div>
     </div>
 
-    <!-- Minimum Interval -->
-    <MinimumIntervalSelector v-model="localMinimumInterval" />
-
-    <!-- Priority -->
-    <div class="form-control w-full">
-      <label
-        for="priority"
-        class="label"
-      >
-        <span class="label-text">Priority (1-10)</span>
-        <span class="label-text-alt text-gray-500">Higher = appears more often</span>
-      </label>
-      <input
-        id="priority"
-        v-model.number="localPriority"
-        type="range"
-        min="1"
-        max="10"
-        class="range range-primary w-full"
-        step="1"
-      >
-      <div class="flex w-full justify-between px-2 text-xs">
-        <span>1</span>
-        <span>2</span>
-        <span>3</span>
-        <span>4</span>
-        <span>5</span>
-        <span>6</span>
-        <span>7</span>
-        <span>8</span>
-        <span>9</span>
-        <span>10</span>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 import type { Cloze, ClozeStrategy } from './Cloze';
-import type { Duration } from '@/dumb/Duration';
 import { generateClozeText, getDefaultIndices } from '@/dumb/cloze-utils';
-import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 
 const props = defineProps<{
   cloze?: Cloze;
@@ -232,8 +196,6 @@ const emit = defineEmits<{
     content: string;
     clozeStrategy: ClozeStrategy;
     indices: number[];
-    minimumInterval?: Duration;
-    priority: number;
   }];
 }>();
 
@@ -242,15 +204,6 @@ const localPostExercise = ref(props.cloze?.postExercise || '');
 const localContent = ref(props.cloze?.content || '');
 const localClozeStrategy = ref<ClozeStrategy>(props.cloze?.clozeStrategy || 'atSpace');
 const localIndices = ref<number[]>(props.cloze?.indices || []);
-const localMinimumInterval = ref<Duration | undefined>(props.cloze?.minimumInterval);
-const localPriority = ref(5);
-
-onMounted(() => {
-  // Load priority from entity
-  if (props.cloze?.priority !== undefined) {
-    localPriority.value = props.cloze.priority;
-  }
-});
 
 // Parse content into parts for atSpace display
 interface ContentPart {
@@ -358,8 +311,6 @@ function emitUpdate(): void {
     content: localContent.value,
     clozeStrategy: localClozeStrategy.value,
     indices: localIndices.value,
-    minimumInterval: localMinimumInterval.value,
-    priority: localPriority.value,
   });
 }
 
@@ -371,7 +322,7 @@ watch(localContent, (newContent) => {
   emitUpdate();
 });
 
-watch([localPreExercise, localPostExercise, localMinimumInterval, localPriority], () => {
+watch([localPreExercise, localPostExercise], () => {
   emitUpdate();
 });
 

@@ -4,8 +4,6 @@ import type { ListContract } from './contract';
 import type { List } from './List';
 import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
-import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
-import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
 const RECALL_THRESHOLD = 0.9;
 
@@ -42,20 +40,14 @@ export const listRepo: ListContract = {
       const recallProbability = ebisu.predictRecall(model, elapsedHours, true);
 
       // Check if recall probability is below threshold
-      if (recallProbability >= RECALL_THRESHOLD) return false;
-
-      // Check if minimum interval has passed since last review
-      const lastReviewDate = new Date(lastReviewTimestamp);
-      return hasMinimumIntervalPassed(lastReviewDate, list.minimumInterval, now);
+      return recallProbability < RECALL_THRESHOLD;
     });
 
-    // Use weighted selection based on priority from entity
-    const weightedLists: WeightedItem<List>[] = dueLists.map((list: List) => ({
-      item: list,
-      weight: list.priority ?? 5, // Default to 5 (medium priority)
-    }));
+    if (dueLists.length === 0) return null;
 
-    return weightedRandomChoice(weightedLists);
+    // Return a random item
+    const randomIndex = Math.floor(Math.random() * dueLists.length);
+    return dueLists[randomIndex] ?? null;
   },
 
   async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<List | null> {
@@ -66,13 +58,11 @@ export const listRepo: ListContract = {
 
     const newLists = allLists.filter((l: List) => !existingProgressIds.includes(l.id!));
 
-    // Use entity priority for new items
-    const weightedLists: WeightedItem<List>[] = newLists.map((list: List) => ({
-      item: list,
-      weight: list.priority ?? 5, // Default to 5 (medium priority)
-    }));
+    if (newLists.length === 0) return null;
 
-    return weightedRandomChoice(weightedLists);
+    // Return a random item
+    const randomIndex = Math.floor(Math.random() * newLists.length);
+    return newLists[randomIndex] ?? null;
   },
 
   async create(data: Omit<List, 'id'>): Promise<string> {

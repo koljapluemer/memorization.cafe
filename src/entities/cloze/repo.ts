@@ -4,8 +4,6 @@ import type { ClozeContract } from './contract';
 import type { Cloze } from './Cloze';
 import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
-import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
-import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
 export const clozeRepo: ClozeContract = {
   async getAll(): Promise<Cloze[]> {
@@ -41,20 +39,14 @@ export const clozeRepo: ClozeContract = {
       if (card.state === State.New) return false;
 
       const dueDate = new Date(card.due);
-      if (dueDate > now) return false;
-
-      // Check if minimum interval has passed since last review
-      const lastReviewDate = card.last_review ? new Date(card.last_review) : null;
-      return hasMinimumIntervalPassed(lastReviewDate, cloze.minimumInterval, now);
+      return dueDate <= now;
     });
 
-    // Use weighted selection based on priority from entity
-    const weightedClozes: WeightedItem<Cloze>[] = dueClozes.map((cloze: Cloze) => ({
-      item: cloze,
-      weight: cloze.priority ?? 5, // Default to 5 (medium priority)
-    }));
+    if (dueClozes.length === 0) return null;
 
-    return weightedRandomChoice(weightedClozes);
+    // Return a random item
+    const randomIndex = Math.floor(Math.random() * dueClozes.length);
+    return dueClozes[randomIndex] ?? null;
   },
 
   async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<Cloze | null> {
@@ -65,13 +57,11 @@ export const clozeRepo: ClozeContract = {
 
     const newClozes = allClozes.filter((c: Cloze) => !existingProgressIds.includes(c.id!));
 
-    // Use entity priority for new items
-    const weightedClozes: WeightedItem<Cloze>[] = newClozes.map((cloze: Cloze) => ({
-      item: cloze,
-      weight: cloze.priority ?? 5, // Default to 5 (medium priority)
-    }));
+    if (newClozes.length === 0) return null;
 
-    return weightedRandomChoice(weightedClozes);
+    // Return a random item
+    const randomIndex = Math.floor(Math.random() * newClozes.length);
+    return newClozes[randomIndex] ?? null;
   },
 
   async create(data: Omit<Cloze, 'id'>): Promise<string> {

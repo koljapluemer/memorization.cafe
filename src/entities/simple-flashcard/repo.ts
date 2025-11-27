@@ -2,8 +2,6 @@ import type { SimpleFlashcardContract } from './contract';
 import type { SimpleFlashcard } from './SimpleFlashcard';
 import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
-import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
-import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
 export const simpleFlashcardRepo: SimpleFlashcardContract = {
   async getAll(): Promise<SimpleFlashcard[]> {
@@ -37,20 +35,14 @@ export const simpleFlashcardRepo: SimpleFlashcardContract = {
       if (!progress?.cardData) return false;
 
       // Check if card is due according to FSRS
-      if (progress.cardData.due > now) return false;
-
-      // Check if minimum interval has passed since last review
-      const lastReviewDate = progress.cardData.last_review ? new Date(progress.cardData.last_review) : null;
-      return hasMinimumIntervalPassed(lastReviewDate, flashcard.minimumInterval, now);
+      return progress.cardData.due <= now;
     });
 
-    // Use weighted selection based on priority from entity
-    const weightedFlashcards: WeightedItem<SimpleFlashcard>[] = dueFlashcards.map((flashcard: SimpleFlashcard) => ({
-      item: flashcard,
-      weight: flashcard.priority ?? 5, // Default to 5 (medium priority)
-    }));
+    if (dueFlashcards.length === 0) return null;
 
-    return weightedRandomChoice(weightedFlashcards);
+    // Return a random item
+    const randomIndex = Math.floor(Math.random() * dueFlashcards.length);
+    return dueFlashcards[randomIndex] ?? null;
   },
 
   async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<SimpleFlashcard | null> {
@@ -62,13 +54,11 @@ export const simpleFlashcardRepo: SimpleFlashcardContract = {
     // Filter out disabled flashcards and those with existing progress
     const newFlashcards = allFlashcards.filter((f: SimpleFlashcard) => !f.isDisabled && !existingProgressIds.includes(f.id!));
 
-    // Use entity priority for new items
-    const weightedFlashcards: WeightedItem<SimpleFlashcard>[] = newFlashcards.map((flashcard: SimpleFlashcard) => ({
-      item: flashcard,
-      weight: flashcard.priority ?? 5, // Default to 5 (medium priority)
-    }));
+    if (newFlashcards.length === 0) return null;
 
-    return weightedRandomChoice(weightedFlashcards);
+    // Return a random item
+    const randomIndex = Math.floor(Math.random() * newFlashcards.length);
+    return newFlashcards[randomIndex] ?? null;
   },
 
   async create(data: Omit<SimpleFlashcard, 'id'>): Promise<string> {

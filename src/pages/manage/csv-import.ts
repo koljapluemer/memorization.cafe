@@ -2,7 +2,6 @@ import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcar
 import type { Concept } from '@/entities/concept/Concept';
 import type { List } from '@/entities/list/List';
 import type { Cloze, ClozeStrategy } from '@/entities/cloze/Cloze';
-import type { Duration } from '@/dumb/Duration';
 import { simpleFlashcardRepo } from '@/entities/simple-flashcard/repo';
 import { conceptRepo } from '@/entities/concept/repo';
 import { listRepo } from '@/entities/list/repo';
@@ -37,9 +36,6 @@ export async function importFlashcardsFromCsv(
         practiceAsFlashcard: row.practiceAsFlashcard?.toLowerCase() === 'false' ? false : true,
         practiceAsPrompt: row.practiceAsPrompt?.toLowerCase() === 'true' ? true : false,
         practiceReverse: row.practiceReverse?.toLowerCase() === 'true' ? true : false,
-        minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
-          ? (row.minimumInterval as Duration)
-          : undefined,
         frontImage: row.frontImage || undefined,
         frontImageLabel: row.frontImageLabel || undefined,
         backImage: row.backImage || undefined,
@@ -87,9 +83,6 @@ export async function importConceptsFromCsv(
         collectionId,
         name: row.name || '',
         description: row.description || undefined,
-        minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
-          ? (row.minimumInterval as Duration)
-          : 'WEEK', // Default for concepts
       };
 
       // Check for duplicates (same name, case-insensitive)
@@ -135,9 +128,6 @@ export async function importListsFromCsv(
         items,
         isOrderedList: row.isOrderedList?.toLowerCase() === 'true' ? true : false,
         note: row.note || undefined,
-        minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
-          ? (row.minimumInterval as Duration)
-          : 'DAY', // Default for lists
       };
 
       // Check for duplicates (same name, case-insensitive)
@@ -192,9 +182,6 @@ export async function importClozesFromCsv(
         indices,
         preExercise: row.preExercise || undefined,
         postExercise: row.postExercise || undefined,
-        minimumInterval: row.minimumInterval && ['HOUR', 'DAY', 'TWO_DAYS', 'WEEK', 'MONTH'].includes(row.minimumInterval)
-          ? (row.minimumInterval as Duration)
-          : undefined,
       };
 
       // Check for duplicates (same content AND same indices array)

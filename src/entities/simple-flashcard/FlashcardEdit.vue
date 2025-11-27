@@ -171,47 +171,13 @@
       </label>
     </div>
 
-    <MinimumIntervalSelector v-model="localMinimumInterval" />
-
-    <div class="form-control w-full">
-      <label
-        for="priority"
-        class="label"
-      >
-        <span class="label-text">Priority (1-10)</span>
-        <span class="label-text-alt text-gray-500">Higher = appears more often</span>
-      </label>
-      <input
-        id="priority"
-        v-model.number="localPriority"
-        type="range"
-        min="1"
-        max="10"
-        class="range range-primary w-full"
-        step="1"
-      >
-      <div class="flex w-full justify-between px-2 text-xs">
-        <span>1</span>
-        <span>2</span>
-        <span>3</span>
-        <span>4</span>
-        <span>5</span>
-        <span>6</span>
-        <span>7</span>
-        <span>8</span>
-        <span>9</span>
-        <span>10</span>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 import type { SimpleFlashcard } from './SimpleFlashcard';
-import type { Duration } from '@/dumb/Duration';
-import { MinimumIntervalSelector } from '@/features/minimum-interval-selector';
 import { resizeImage } from '@/dumb/image-utils';
 
 const props = defineProps<{
@@ -219,7 +185,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  update: [data: { front: string; back: string; practiceAsFlashcard: boolean; practiceAsPrompt: boolean; practiceReverse: boolean; isDisabled: boolean; minimumInterval?: Duration; priority: number; frontImage?: string; frontImageLabel?: string; backImage?: string; backImageLabel?: string }];
+  update: [data: { front: string; back: string; practiceAsFlashcard: boolean; practiceAsPrompt: boolean; practiceReverse: boolean; isDisabled: boolean; frontImage?: string; frontImageLabel?: string; backImage?: string; backImageLabel?: string }];
 }>();
 
 const localFront = ref(props.flashcard?.front || '');
@@ -228,8 +194,6 @@ const localPracticeAsFlashcard = ref(props.flashcard?.practiceAsFlashcard ?? tru
 const localPracticeAsPrompt = ref(props.flashcard?.practiceAsPrompt ?? false);
 const localPracticeReverse = ref(props.flashcard?.practiceReverse ?? false);
 const localIsDisabled = ref(props.flashcard?.isDisabled ?? false);
-const localMinimumInterval = ref<Duration | undefined>(props.flashcard?.minimumInterval);
-const localPriority = ref(5);
 const localFrontImage = ref<string | undefined>(props.flashcard?.frontImage);
 const localFrontImageLabel = ref<string | undefined>(props.flashcard?.frontImageLabel);
 const localBackImage = ref<string | undefined>(props.flashcard?.backImage);
@@ -289,14 +253,7 @@ function removeBackImage() {
   }
 }
 
-onMounted(() => {
-  // Load priority from entity
-  if (props.flashcard?.priority !== undefined) {
-    localPriority.value = props.flashcard.priority;
-  }
-});
-
-watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, localPracticeReverse, localIsDisabled, localMinimumInterval, localPriority, localFrontImage, localFrontImageLabel, localBackImage, localBackImageLabel], () => {
+watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, localPracticeReverse, localIsDisabled, localFrontImage, localFrontImageLabel, localBackImage, localBackImageLabel], () => {
   emit('update', {
     front: localFront.value,
     back: localBack.value,
@@ -304,8 +261,6 @@ watch([localFront, localBack, localPracticeAsFlashcard, localPracticeAsPrompt, l
     practiceAsPrompt: localPracticeAsPrompt.value,
     practiceReverse: localPracticeReverse.value,
     isDisabled: localIsDisabled.value,
-    minimumInterval: localMinimumInterval.value,
-    priority: localPriority.value,
     frontImage: localFrontImage.value,
     frontImageLabel: localFrontImageLabel.value,
     backImage: localBackImage.value,

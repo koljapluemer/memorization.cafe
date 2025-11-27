@@ -1,5 +1,3 @@
-import type { Duration } from "@/dumb/Duration";
-
 export interface List {
   id?: string;
   collectionId: string;
@@ -7,6 +5,4 @@ export interface List {
   items: string[];
   isOrderedList: boolean;
   note?: string;
-  minimumInterval?: Duration;
-  priority?: number; // 1-10, defaults to 5. Affects selection weighting linearly.
 }

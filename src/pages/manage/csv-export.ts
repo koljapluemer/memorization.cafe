@@ -25,14 +25,13 @@ function escapeCsvField(value: string | number | boolean | undefined | null): st
  * Exports flashcards to CSV format
  */
 export function exportFlashcardsToCsv(flashcards: SimpleFlashcard[]): string {
-  const headers = ['front', 'back', 'practiceAsFlashcard', 'practiceAsPrompt', 'practiceReverse', 'minimumInterval'];
+  const headers = ['front', 'back', 'practiceAsFlashcard', 'practiceAsPrompt', 'practiceReverse'];
   const rows = flashcards.map(f => [
     escapeCsvField(f.front),
     escapeCsvField(f.back),
     escapeCsvField(f.practiceAsFlashcard ?? true),
     escapeCsvField(f.practiceAsPrompt ?? false),
     escapeCsvField(f.practiceReverse ?? false),
-    escapeCsvField(f.minimumInterval || ''),
   ]);
 
   return [
@@ -45,11 +44,10 @@ export function exportFlashcardsToCsv(flashcards: SimpleFlashcard[]): string {
  * Exports concepts to CSV format
  */
 export function exportConceptsToCsv(concepts: Concept[]): string {
-  const headers = ['name', 'description', 'minimumInterval'];
+  const headers = ['name', 'description'];
   const rows = concepts.map(c => [
     escapeCsvField(c.name),
     escapeCsvField(c.description || ''),
-    escapeCsvField(c.minimumInterval || ''),
   ]);
 
   return [
@@ -62,13 +60,12 @@ export function exportConceptsToCsv(concepts: Concept[]): string {
  * Exports lists to CSV format
  */
 export function exportListsToCsv(lists: List[]): string {
-  const headers = ['name', 'items', 'isOrderedList', 'note', 'minimumInterval'];
+  const headers = ['name', 'items', 'isOrderedList', 'note'];
   const rows = lists.map(l => [
     escapeCsvField(l.name),
     escapeCsvField(l.items.join('|')),
     escapeCsvField(l.isOrderedList),
     escapeCsvField(l.note || ''),
-    escapeCsvField(l.minimumInterval || ''),
   ]);
 
   return [
@@ -81,14 +78,13 @@ export function exportListsToCsv(lists: List[]): string {
  * Exports clozes to CSV format
  */
 export function exportClozesToCsv(clozes: Cloze[]): string {
-  const headers = ['content', 'clozeStrategy', 'indices', 'preExercise', 'postExercise', 'minimumInterval'];
+  const headers = ['content', 'clozeStrategy', 'indices', 'preExercise', 'postExercise'];
   const rows = clozes.map(c => [
     escapeCsvField(c.content),
     escapeCsvField(c.clozeStrategy),
     escapeCsvField(JSON.stringify(c.indices)),
     escapeCsvField(c.preExercise || ''),
     escapeCsvField(c.postExercise || ''),
-    escapeCsvField(c.minimumInterval || ''),
   ]);
 
   return [

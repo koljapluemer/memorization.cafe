@@ -2,8 +2,6 @@ import type { ConceptContract } from './contract';
 import type { Concept } from './Concept';
 import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
-import { weightedRandomChoice, type WeightedItem } from '@/dumb/weighted-random';
-import { hasMinimumIntervalPassed } from '@/dumb/duration-utils';
 
 function isSameCalendarDay(date1: Date, date2: Date): boolean {
   return date1.getFullYear() === date2.getFullYear() &&
@@ -43,20 +41,14 @@ export const conceptRepo: ConceptContract = {
       if (!lastAnswer) return false;
 
       // Only return concepts that were NOT answered today
-      if (isSameCalendarDay(new Date(lastAnswer.timestamp), now)) return false;
-
-      // Check if minimum interval has passed since last answer
-      const lastReviewDate = new Date(lastAnswer.timestamp);
-      return hasMinimumIntervalPassed(lastReviewDate, concept.minimumInterval, now);
+      return !isSameCalendarDay(new Date(lastAnswer.timestamp), now);
     });
 
-    // Use weighted selection based on priority from entity
-    const weightedConcepts: WeightedItem<Concept>[] = dueConcepts.map((concept: Concept) => ({
-      item: concept,
-      weight: concept.priority ?? 5, // Default to 5 (medium priority)
-    }));
+    if (dueConcepts.length === 0) return null;
 
-    return weightedRandomChoice(weightedConcepts);
+    // Return a random item
+    const randomIndex = Math.floor(Math.random() * dueConcepts.length);
+    return dueConcepts[randomIndex] ?? null;
   },
 
   async getRandomNew(collectionIds: string[], existingProgressIds: string[]): Promise<Concept | null> {
@@ -67,13 +59,11 @@ export const conceptRepo: ConceptContract = {
 
     const newConcepts = allConcepts.filter((c: Concept) => !existingProgressIds.includes(c.id!));
 
-    // Use entity priority for new items
-    const weightedConcepts: WeightedItem<Concept>[] = newConcepts.map((concept: Concept) => ({
-      item: concept,
-      weight: concept.priority ?? 5, // Default to 5 (medium priority)
-    }));
+    if (newConcepts.length === 0) return null;
 
-    return weightedRandomChoice(weightedConcepts);
+    // Return a random item
+    const randomIndex = Math.floor(Math.random() * newConcepts.length);
+    return newConcepts[randomIndex] ?? null;
   },
 
   async create(data: Omit<Concept, 'id'>): Promise<string> {
