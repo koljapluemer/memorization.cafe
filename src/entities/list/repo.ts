@@ -6,6 +6,7 @@ import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
 
 const RECALL_THRESHOLD = 0.9;
+const MINIMUM_HOURS_BETWEEN_PRACTICE = 1;
 
 export const listRepo: ListContract = {
   async getAll(): Promise<List[]> {
@@ -37,9 +38,14 @@ export const listRepo: ListContract = {
 
       const { model, lastReviewTimestamp } = progress.listData;
       const elapsedHours = (now.getTime() - new Date(lastReviewTimestamp).getTime()) / (1000 * 60 * 60);
-      const recallProbability = ebisu.predictRecall(model, elapsedHours, true);
+
+      // Check hourly limit first (cheaper computation)
+      if (elapsedHours < MINIMUM_HOURS_BETWEEN_PRACTICE) {
+        return false;  // Not enough time has passed
+      }
 
       // Check if recall probability is below threshold
+      const recallProbability = ebisu.predictRecall(model, elapsedHours, true);
       return recallProbability < RECALL_THRESHOLD;
     });
 
