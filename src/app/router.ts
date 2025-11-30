@@ -18,6 +18,11 @@ const router = createRouter({
       component: () => import('@/pages/manage/ManagePage.vue'),
     },
     {
+      path: '/stats',
+      name: 'Stats',
+      component: () => import('@/pages/stats/StatsPage.vue'),
+    },
+    {
       path: '/settings',
       name: 'Settings',
       component: () => import('@/pages/settings/SettingsPage.vue'),

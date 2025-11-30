@@ -33,6 +33,15 @@
         </router-link>
 
         <router-link
+          to="/stats"
+          class="btn btn-ghost gap-2"
+          :class="{ 'btn-active': isActive('/stats') }"
+        >
+          <BarChart2 :size="20" />
+          <span class="hidden sm:inline">Stats</span>
+        </router-link>
+
+        <router-link
           to="/settings"
           class="btn btn-ghost gap-2"
           :class="{ 'btn-active': isActive('/settings') }"
@@ -47,7 +56,7 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { Brain, FolderOpen, Settings } from 'lucide-vue-next';
+import { BarChart2, Brain, FolderOpen, Settings } from 'lucide-vue-next';
 
 const route = useRoute();
 
