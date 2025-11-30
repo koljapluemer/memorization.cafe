@@ -306,6 +306,7 @@ function getConceptStatus(progress: LearningProgress | undefined, now: Date): St
   }
 
   const lastAnswer = progress.answers[progress.answers.length - 1];
+  if (!lastAnswer) return 'unseen';
   const lastAnswerDate = toDate(lastAnswer.timestamp);
 
   if (isSameCalendarDay(lastAnswerDate, now)) {

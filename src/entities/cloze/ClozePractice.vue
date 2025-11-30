@@ -1,4 +1,5 @@
 <template>
+  <!-- eslint-disable vue/no-v-html -->
   <PracticeLayout
     @skip="emit('skip')"
     @edit="emit('edit')"
@@ -19,6 +20,7 @@
       </div>
 
       <template v-if="revealed">
+        <!-- eslint-disable-next-line vue/no-v-html -->
         <div
           class="text-lg"
           v-html="highlightedContent"
@@ -117,6 +119,7 @@ import { fsrs, Rating, createEmptyCard } from 'ts-fsrs';
 import { Edit } from 'lucide-vue-next';
 
 import type { Cloze } from './Cloze';
+
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { generateClozeText } from '@/dumb/cloze-utils';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';

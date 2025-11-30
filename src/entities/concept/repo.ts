@@ -1,5 +1,6 @@
 import type { ConceptContract } from './contract';
 import type { Concept } from './Concept';
+
 import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
 

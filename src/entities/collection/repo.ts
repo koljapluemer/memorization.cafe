@@ -1,5 +1,6 @@
 import type { CollectionContract } from './contract';
 import type { Collection } from './Collection';
+
 import { db } from '@/app/database';
 
 export const collectionRepo: CollectionContract = {

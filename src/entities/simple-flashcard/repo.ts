@@ -1,5 +1,6 @@
 import type { SimpleFlashcardContract } from './contract';
 import type { SimpleFlashcard } from './SimpleFlashcard';
+
 import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
 

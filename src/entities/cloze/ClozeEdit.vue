@@ -175,7 +175,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -183,6 +182,7 @@
 import { ref, watch, computed } from 'vue';
 
 import type { Cloze, ClozeStrategy } from './Cloze';
+
 import { generateClozeText, getDefaultIndices } from '@/dumb/cloze-utils';
 
 const props = defineProps<{

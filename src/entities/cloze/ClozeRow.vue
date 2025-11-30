@@ -8,6 +8,7 @@
 import { computed } from 'vue';
 
 import type { Cloze } from './Cloze';
+
 import { generateClozeText } from '@/dumb/cloze-utils';
 
 const props = defineProps<{

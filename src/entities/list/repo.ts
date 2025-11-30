@@ -2,6 +2,7 @@ import * as ebisu from 'ebisu-js';
 
 import type { ListContract } from './contract';
 import type { List } from './List';
+
 import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
 

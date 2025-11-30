@@ -2,6 +2,7 @@ import { State } from 'ts-fsrs';
 
 import type { ClozeContract } from './contract';
 import type { Cloze } from './Cloze';
+
 import { db } from '@/app/database';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';
 

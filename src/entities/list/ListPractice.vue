@@ -107,7 +107,10 @@
         </div>
 
         <div class="form-control w-full">
-          <label class="label" v-if="list.items.length - highRecallItems.size !== 0">
+          <label
+            v-if="list.items.length - highRecallItems.size !== 0"
+            class="label"
+          >
             <span class="label-text">
               Try to remember the {{ list.items.length - highRecallItems.size }} remaining items:
             </span>
@@ -168,6 +171,7 @@ import * as ebisu from 'ebisu-js';
 import { Edit } from 'lucide-vue-next';
 
 import type { List } from './List';
+
 import type { ElementModelsMap } from '@/entities/learning-progress/LearningProgress';
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';

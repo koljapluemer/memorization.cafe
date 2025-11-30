@@ -117,11 +117,11 @@ import PreviewModal from './PreviewModal.vue';
 import MoveItemModal from './MoveItemModal.vue';
 import OpenCollectionModal from './OpenCollectionModal.vue';
 import LearningProgressModal from './LearningProgressModal.vue';
-import { ShareCollectionModal } from '@/features/collection-sharing';
 import { loadOpenTabs, saveOpenTabs } from './tab-storage';
 import { generateExampleCsv, downloadCsv, parseCsv, validateCsvData, readFileAsText, type EntityType } from './csv-utils';
 import { importFlashcardsFromCsv, importConceptsFromCsv, importListsFromCsv, importClozesFromCsv } from './csv-import';
 
+import { ShareCollectionModal } from '@/features/collection-sharing';
 import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
 import type { Concept } from '@/entities/concept/Concept';
 import type { List } from '@/entities/list/List';
@@ -145,6 +145,12 @@ interface EnrichedLearningItem {
   lastPracticedDate: Date | null;
   introductionDate: Date | null;
 }
+
+type LearningItemEntry =
+  | { type: 'flashcard'; data: SimpleFlashcard; id?: string }
+  | { type: 'concept'; data: Concept; id?: string }
+  | { type: 'list'; data: List; id?: string }
+  | { type: 'cloze'; data: Cloze; id?: string };
 
 const collections = ref<Collection[]>([]);
 const openTabIds = ref<string[]>([]);
@@ -228,23 +234,23 @@ async function updateEnrichedItems() {
   });
 }
 
-function getDisplayName(item: { type: string; data: any }): string {
+function getDisplayName(item: LearningItemEntry): string {
   switch (item.type) {
     case 'flashcard':
-      return (item.data as SimpleFlashcard).front;
+      return item.data.front;
     case 'concept':
-      return (item.data as Concept).name;
+      return item.data.name;
     case 'list':
-      return (item.data as List).name;
+      return item.data.name;
     case 'cloze':
-      return (item.data as Cloze).content;
+      return item.data.content;
     default:
       return '';
   }
 }
 
 function getLastPracticedDate(
-  type: string,
+  type: LearningItemEntry['type'],
   progress: LearningProgress | null
 ): Date | null {
   if (!progress) return null;
@@ -286,7 +292,7 @@ const otherCollections = computed(() =>
   collections.value.filter(c => c.id !== activeTabId.value)
 );
 
-const allLearningItems = computed(() => {
+const allLearningItems = computed<LearningItemEntry[]>(() => {
   if (!activeTabId.value) return [];
 
   const items = [
@@ -760,4 +766,3 @@ function getEntityDisplayName(type: EntityType): string {
   }
 }
 </script>
-

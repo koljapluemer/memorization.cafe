@@ -97,8 +97,8 @@ import { ref, onMounted } from 'vue';
 
 import FilterModal from './FilterModal.vue';
 import { loadFilters, saveFilters, type PracticeFilters } from './filter-storage';
-import LearningItemEditModal from '@/pages/manage/LearningItemEditModal.vue';
 
+import LearningItemEditModal from '@/pages/manage/LearningItemEditModal.vue';
 import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
 import type { Concept } from '@/entities/concept/Concept';
 import type { List } from '@/entities/list/List';
@@ -134,12 +134,18 @@ const isLoading = ref(false);
 const showSpinner = ref(false);
 let spinnerTimeout: ReturnType<typeof setTimeout> | null = null;
 
-const recentlyIntroducedItems = ref<Array<{
+type RecentlyIntroducedItem = {
   itemId: string;
   itemType: 'flashcard' | 'cloze' | 'list';
   introducedAt: Date;
   exercisesSince: number;
-}>>([]);
+};
+
+type StoredRecentlyIntroducedItem = Omit<RecentlyIntroducedItem, 'introducedAt'> & {
+  introducedAt: string;
+};
+
+const recentlyIntroducedItems = ref<RecentlyIntroducedItem[]>([]);
 
 const lastShownItemId = ref<string | null>(null);
 const REINTRODUCTION_WINDOW = 10;
@@ -155,8 +161,8 @@ onMounted(async () => {
   const stored = localStorage.getItem('recentlyIntroducedItems');
   if (stored) {
     try {
-      const parsed = JSON.parse(stored);
-      recentlyIntroducedItems.value = parsed.map((item: any) => ({
+      const parsed = JSON.parse(stored) as StoredRecentlyIntroducedItem[];
+      recentlyIntroducedItems.value = parsed.map((item) => ({
         ...item,
         introducedAt: new Date(item.introducedAt)
       }));
@@ -710,4 +716,3 @@ async function handleDisable() {
   opacity: 0;
 }
 </style>
-

@@ -73,6 +73,7 @@ import { ref, onMounted } from 'vue';
 import { Edit } from 'lucide-vue-next';
 
 import type { Concept } from './Concept';
+
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { getRandomItem } from '@/dumb/array-utils';
 import { learningProgressRepo } from '@/entities/learning-progress/repo';

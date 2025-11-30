@@ -1,5 +1,6 @@
 import type { QuestionListContract } from './contract';
 import type { QuestionList } from './QuestionList';
+
 import { db } from '@/app/database';
 
 const DEFAULT_QUESTIONS = [

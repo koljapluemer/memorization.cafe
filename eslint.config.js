@@ -4,10 +4,19 @@ import tseslint from "typescript-eslint";
 import pluginVue from "eslint-plugin-vue";
 import importPlugin from "eslint-plugin-import";
 import unusedImports from "eslint-plugin-unused-imports";
+import globals from "globals";
 
 export default [
   {
     ignores: ["dist", "node_modules"],
+  },
+  {
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.es2021,
+      },
+    },
   },
   {
     files: ["**/*.vue"],
@@ -20,6 +29,8 @@ export default [
         extraFileExtensions: [".vue"],
       },
       globals: {
+        ...globals.browser,
+        ...globals.es2021,
         HTMLInputElement: "readonly",
         HTMLDialogElement: "readonly",
         Event: "readonly",

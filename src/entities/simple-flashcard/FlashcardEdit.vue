@@ -170,7 +170,6 @@
         <span class="label-text">Disable this flashcard (won't appear in practice)</span>
       </label>
     </div>
-
   </div>
 </template>
 
@@ -178,6 +177,7 @@
 import { ref, watch, computed } from 'vue';
 
 import type { SimpleFlashcard } from './SimpleFlashcard';
+
 import { resizeImage } from '@/dumb/image-utils';
 
 const props = defineProps<{

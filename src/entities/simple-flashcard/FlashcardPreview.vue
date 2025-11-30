@@ -50,6 +50,7 @@
 import { ArrowLeftRight } from 'lucide-vue-next';
 
 import type { SimpleFlashcard } from './SimpleFlashcard';
+
 import MarkdownText from '@/dumb/MarkdownText.vue';
 
 defineProps<{

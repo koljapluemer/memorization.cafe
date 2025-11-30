@@ -1,3 +1,6 @@
+import Dexie from 'dexie';
+import dexieCloud from 'dexie-cloud-addon';
+
 import type { Cloze } from '@/entities/cloze/Cloze';
 import type { Concept } from '@/entities/concept/Concept';
 import type { LearningProgress } from '@/entities/learning-progress/LearningProgress';
@@ -5,8 +8,6 @@ import type { List } from '@/entities/list/List';
 import type { QuestionList } from '@/entities/question-list/QuestionList';
 import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
 import type { Collection } from '@/entities/collection/Collection';
-import Dexie from 'dexie';
-import dexieCloud from 'dexie-cloud-addon';
 
 
 

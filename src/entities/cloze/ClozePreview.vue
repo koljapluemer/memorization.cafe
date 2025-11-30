@@ -26,6 +26,7 @@
 import { computed } from 'vue';
 
 import type { Cloze } from './Cloze';
+
 import MarkdownText from '@/dumb/MarkdownText.vue';
 import { generateClozeText } from '@/dumb/cloze-utils';
 

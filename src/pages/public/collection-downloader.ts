@@ -24,6 +24,7 @@ export async function downloadCollection(sharedCollection: SharedCollection): Pr
   // Import flashcards
   for (const flashcard of sharedCollection.items.flashcards) {
     const { id, ...flashcardData } = flashcard;
+    void id;
     importPromises.push(
       simpleFlashcardRepo.create({
         ...flashcardData,
@@ -35,6 +36,7 @@ export async function downloadCollection(sharedCollection: SharedCollection): Pr
   // Import concepts
   for (const concept of sharedCollection.items.concepts) {
     const { id, ...conceptData } = concept;
+    void id;
     importPromises.push(
       conceptRepo.create({
         ...conceptData,
@@ -46,6 +48,7 @@ export async function downloadCollection(sharedCollection: SharedCollection): Pr
   // Import lists
   for (const list of sharedCollection.items.lists) {
     const { id, ...listData } = list;
+    void id;
     importPromises.push(
       listRepo.create({
         ...listData,
@@ -57,6 +60,7 @@ export async function downloadCollection(sharedCollection: SharedCollection): Pr
   // Import clozes
   for (const cloze of sharedCollection.items.clozes) {
     const { id, ...clozeData } = cloze;
+    void id;
     importPromises.push(
       clozeRepo.create({
         ...clozeData,

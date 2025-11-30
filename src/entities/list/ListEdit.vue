@@ -103,6 +103,7 @@
 import { ref, watch } from 'vue';
 
 import type { List } from './List';
+
 import { shuffleArray } from '@/dumb/array-utils';
 
 const props = defineProps<{

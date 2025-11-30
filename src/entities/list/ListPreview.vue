@@ -42,6 +42,7 @@
 
 <script setup lang="ts">
 import type { List } from './List';
+
 import MarkdownText from '@/dumb/MarkdownText.vue';
 
 defineProps<{

@@ -52,7 +52,6 @@
         </option>
       </select>
     </div>
-
   </div>
 </template>
 
@@ -60,6 +59,7 @@
 import { ref, watch, onMounted } from 'vue';
 
 import type { Concept } from './Concept';
+
 import { questionListRepo } from '@/entities/question-list/repo';
 import type { QuestionList } from '@/entities/question-list/QuestionList';
 

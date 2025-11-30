@@ -15,6 +15,7 @@
 
 <script setup lang="ts">
 import type { Concept } from './Concept';
+
 import MarkdownText from '@/dumb/MarkdownText.vue';
 
 defineProps<{

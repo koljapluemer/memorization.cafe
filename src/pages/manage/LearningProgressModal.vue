@@ -10,7 +10,9 @@
 
       <div v-if="!progress">
         <div class="text-center py-8 text-base-content/70">
-          <p class="text-lg">Not yet practiced</p>
+          <p class="text-lg">
+            Not yet practiced
+          </p>
           <p class="text-sm mt-2">
             This item has not been introduced in practice sessions yet.
           </p>
@@ -305,12 +307,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
-import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
-import type { Concept } from '@/entities/concept/Concept';
-import type { List } from '@/entities/list/List';
-import type { Cloze } from '@/entities/cloze/Cloze';
-import type { LearningProgress } from '@/entities/learning-progress/LearningProgress';
-
 import {
   formatRelativeDate,
   formatAbsoluteDate,
@@ -319,6 +315,13 @@ import {
   formatPercentage,
   formatNumber,
 } from './progress-formatting';
+
+import type { SimpleFlashcard } from '@/entities/simple-flashcard/SimpleFlashcard';
+import type { Concept } from '@/entities/concept/Concept';
+import type { List } from '@/entities/list/List';
+import type { Cloze } from '@/entities/cloze/Cloze';
+import type { LearningProgress } from '@/entities/learning-progress/LearningProgress';
+
 
 const props = defineProps<{
   itemType: 'flashcard' | 'concept' | 'list' | 'cloze';

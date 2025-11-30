@@ -112,6 +112,7 @@ import { ref } from 'vue';
 import { Copy } from 'lucide-vue-next';
 
 import { shareCollection } from './share-service';
+
 import { useCloudSync } from '@/app/useCloudSync';
 
 const props = defineProps<{
@@ -165,7 +166,7 @@ async function copyLink() {
     setTimeout(() => {
       copySuccess.value = false;
     }, 3000);
-  } catch (err) {
+  } catch {
     // Fallback: select the text
     linkInputRef.value?.select();
   }

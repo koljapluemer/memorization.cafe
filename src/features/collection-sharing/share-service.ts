@@ -1,12 +1,13 @@
 import { doc, setDoc } from 'firebase/firestore';
 
+import type { ShareResult, SharedCollection } from './types';
+
 import { firestore, isFirebaseConfigured } from '@/app/firebase';
 import { collectionRepo } from '@/entities/collection/repo';
 import { simpleFlashcardRepo } from '@/entities/simple-flashcard/repo';
 import { conceptRepo } from '@/entities/concept/repo';
 import { listRepo } from '@/entities/list/repo';
 import { clozeRepo } from '@/entities/cloze/repo';
-import type { ShareResult, SharedCollection } from './types';
 
 /**
  * Generates a unique share ID (12 characters, URL-safe)

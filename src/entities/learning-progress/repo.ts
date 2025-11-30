@@ -3,6 +3,7 @@ import type { Model as EbisuModel } from 'ebisu-js';
 
 import type { LearningProgressContract } from './contract';
 import type { LearningProgress, ElementModelsMap } from './LearningProgress';
+
 import { db } from '@/app/database';
 
 export const learningProgressRepo: LearningProgressContract = {
