@@ -17,6 +17,7 @@
           @delete="handleDelete"
           @disable="handleDisable"
           @filter="openFilterModal"
+          @add-to-hot-list="handleAddToHotList"
         />
         <ConceptPractice
           v-else-if="currentItemType === 'concept'"
@@ -35,6 +36,7 @@
           @edit="handleEdit"
           @delete="handleDelete"
           @filter="openFilterModal"
+          @add-to-hot-list="handleAddToHotList"
         />
         <ClozePractice
           v-else-if="currentItemType === 'cloze'"
@@ -44,6 +46,7 @@
           @edit="handleEdit"
           @delete="handleDelete"
           @filter="openFilterModal"
+          @add-to-hot-list="handleAddToHotList"
         />
       </div>
 
@@ -134,21 +137,9 @@ const isLoading = ref(false);
 const showSpinner = ref(false);
 let spinnerTimeout: ReturnType<typeof setTimeout> | null = null;
 
-type RecentlyIntroducedItem = {
-  itemId: string;
-  itemType: 'flashcard' | 'cloze' | 'list';
-  introducedAt: Date;
-  exercisesSince: number;
-};
-
-type StoredRecentlyIntroducedItem = Omit<RecentlyIntroducedItem, 'introducedAt'> & {
-  introducedAt: string;
-};
-
-const recentlyIntroducedItems = ref<RecentlyIntroducedItem[]>([]);
-
+// Hot list for recently introduced items
+const hotList = ref<Set<string>>(new Set());
 const lastShownItemId = ref<string | null>(null);
-const REINTRODUCTION_WINDOW = 10;
 
 onMounted(async () => {
   collections.value = await collectionRepo.getAll();
@@ -156,20 +147,6 @@ onMounted(async () => {
   concepts.value = await conceptRepo.getAll();
   lists.value = await listRepo.getAll();
   clozes.value = await clozeRepo.getAll();
-
-  // Load recently introduced items queue from localStorage
-  const stored = localStorage.getItem('recentlyIntroducedItems');
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored) as StoredRecentlyIntroducedItem[];
-      recentlyIntroducedItems.value = parsed.map((item) => ({
-        ...item,
-        introducedAt: new Date(item.introducedAt)
-      }));
-    } catch (e) {
-      console.error('Failed to parse recentlyIntroducedItems from localStorage', e);
-    }
-  }
 
   await loadNextItem();
 });
@@ -225,46 +202,53 @@ async function loadNextItem() {
   let nextItem: SimpleFlashcard | Concept | List | Cloze | null = null;
   let nextItemType: 'flashcard' | 'concept' | 'list' | 'cloze' | null = null;
 
-  // Increment exercise counters for all tracked items
-  recentlyIntroducedItems.value.forEach(item => {
-    item.exercisesSince++;
-  });
-
-  // Check for items needing guaranteed re-practice (>= 10 exercises since intro)
-  const itemNeedingReintro = recentlyIntroducedItems.value.find(
-    item => item.exercisesSince >= REINTRODUCTION_WINDOW
-  );
-
-  if (itemNeedingReintro) {
-    // Force select this item
-    if (itemNeedingReintro.itemType === 'flashcard') {
-      nextItem = (await simpleFlashcardRepo.getById(itemNeedingReintro.itemId)) ?? null;
-      nextItemType = 'flashcard';
-    } else if (itemNeedingReintro.itemType === 'cloze') {
-      nextItem = (await clozeRepo.getById(itemNeedingReintro.itemId)) ?? null;
-      nextItemType = 'cloze';
-    } else if (itemNeedingReintro.itemType === 'list') {
-      nextItem = (await listRepo.getById(itemNeedingReintro.itemId)) ?? null;
-      nextItemType = 'list';
-    }
-
-    // Remove from queue
-    recentlyIntroducedItems.value = recentlyIntroducedItems.value.filter(
-      item => item.itemId !== itemNeedingReintro.itemId
+  // Try hot_list first (50% chance when non-empty)
+  if (hotList.value.size > 0 && Math.random() < 0.5) {
+    const eligibleHotItems = Array.from(hotList.value).filter(
+      id => id !== lastShownItemId.value
     );
-    localStorage.setItem('recentlyIntroducedItems', JSON.stringify(recentlyIntroducedItems.value));
 
-    // Finish loading early (even if item was deleted)
-    if (spinnerTimeout) clearTimeout(spinnerTimeout);
-    showSpinner.value = false;
-    currentItem.value = nextItem;
-    currentItemType.value = nextItemType;
-    isLoading.value = false;
-    return;
+    if (eligibleHotItems.length > 0) {
+      const selectedId = eligibleHotItems[Math.floor(Math.random() * eligibleHotItems.length)];
+
+      if (selectedId) {
+        // Try to load item (check all types: flashcard, cloze, list)
+        const flashcard = await simpleFlashcardRepo.getById(selectedId);
+        if (flashcard && !flashcard.isDisabled && flashcard.id) {
+          nextItem = flashcard;
+          nextItemType = 'flashcard';
+        } else {
+          const cloze = await clozeRepo.getById(selectedId);
+          if (cloze && cloze.id) {
+            nextItem = cloze;
+            nextItemType = 'cloze';
+          } else {
+            const list = await listRepo.getById(selectedId);
+            if (list && list.id) {
+              nextItem = list;
+              nextItemType = 'list';
+            }
+          }
+        }
+
+        // If found, remove from hot list and finish
+        if (nextItem && nextItemType && nextItem.id) {
+          hotList.value.delete(selectedId);
+          lastShownItemId.value = nextItem.id;
+
+          if (spinnerTimeout) clearTimeout(spinnerTimeout);
+          showSpinner.value = false;
+          currentItem.value = nextItem;
+          currentItemType.value = nextItemType;
+          isLoading.value = false;
+          return;
+        } else {
+          // Item was deleted - remove from hot list
+          hotList.value.delete(selectedId);
+        }
+      }
+    }
   }
-
-  // Store last shown item to prevent immediate doubling
-  lastShownItemId.value = currentItem.value?.id ?? null;
 
   // Calculate active collections (all collections minus excluded ones)
   const allCollectionIds = collections.value.map(c => c.id!);
@@ -318,7 +302,7 @@ async function loadNextItem() {
           );
           const existingIds = allProgress.map(p => p.learningItemId);
           const newFlashcard = await simpleFlashcardRepo.getRandomNew([selectedCollectionId], existingIds);
-          if (newFlashcard) {
+          if (newFlashcard && newFlashcard.id !== lastShownItemId.value) {
             nextItem = newFlashcard;
             nextItemType = 'flashcard';
             break;
@@ -326,7 +310,7 @@ async function loadNextItem() {
 
           // Fallback to due flashcard from selected collection
           const dueFlashcard = await simpleFlashcardRepo.getRandomDue([selectedCollectionId], now);
-          if (dueFlashcard) {
+          if (dueFlashcard && dueFlashcard.id !== lastShownItemId.value) {
             nextItem = dueFlashcard;
             nextItemType = 'flashcard';
             break;
@@ -334,7 +318,7 @@ async function loadNextItem() {
         } else {
           // Try to get a due flashcard from selected collection
           const dueFlashcard = await simpleFlashcardRepo.getRandomDue([selectedCollectionId], now);
-          if (dueFlashcard) {
+          if (dueFlashcard && dueFlashcard.id !== lastShownItemId.value) {
             nextItem = dueFlashcard;
             nextItemType = 'flashcard';
             break;
@@ -346,7 +330,7 @@ async function loadNextItem() {
           );
           const existingIds = allProgress.map(p => p.learningItemId);
           const newFlashcard = await simpleFlashcardRepo.getRandomNew([selectedCollectionId], existingIds);
-          if (newFlashcard) {
+          if (newFlashcard && newFlashcard.id !== lastShownItemId.value) {
             nextItem = newFlashcard;
             nextItemType = 'flashcard';
             break;
@@ -361,21 +345,21 @@ async function loadNextItem() {
         );
         const existingIds = allProgress.map(p => p.learningItemId);
         const newFlashcard = await simpleFlashcardRepo.getRandomNew(activeCollectionIds, existingIds);
-        if (newFlashcard) {
+        if (newFlashcard && newFlashcard.id !== lastShownItemId.value) {
           nextItem = newFlashcard;
           nextItemType = 'flashcard';
           break;
         }
 
         const dueFlashcard = await simpleFlashcardRepo.getRandomDue(activeCollectionIds, now);
-        if (dueFlashcard) {
+        if (dueFlashcard && dueFlashcard.id !== lastShownItemId.value) {
           nextItem = dueFlashcard;
           nextItemType = 'flashcard';
           break;
         }
       } else {
         const dueFlashcard = await simpleFlashcardRepo.getRandomDue(activeCollectionIds, now);
-        if (dueFlashcard) {
+        if (dueFlashcard && dueFlashcard.id !== lastShownItemId.value) {
           nextItem = dueFlashcard;
           nextItemType = 'flashcard';
           break;
@@ -386,7 +370,7 @@ async function loadNextItem() {
         );
         const existingIds = allProgress.map(p => p.learningItemId);
         const newFlashcard = await simpleFlashcardRepo.getRandomNew(activeCollectionIds, existingIds);
-        if (newFlashcard) {
+        if (newFlashcard && newFlashcard.id !== lastShownItemId.value) {
           nextItem = newFlashcard;
           nextItemType = 'flashcard';
           break;
@@ -398,7 +382,7 @@ async function loadNextItem() {
 
       if (selectedCollectionId) {
         const concept = await conceptRepo.getRandomFromLongestUnseen([selectedCollectionId], now);
-        if (concept) {
+        if (concept && concept.id !== lastShownItemId.value) {
           nextItem = concept;
           nextItemType = 'concept';
           break;
@@ -407,7 +391,7 @@ async function loadNextItem() {
 
       // Fallback: pool all collections
       const concept = await conceptRepo.getRandomFromLongestUnseen(activeCollectionIds, now);
-      if (concept) {
+      if (concept && concept.id !== lastShownItemId.value) {
         nextItem = concept;
         nextItemType = 'concept';
         break;
@@ -423,21 +407,21 @@ async function loadNextItem() {
           );
           const existingIds = allProgress.map(p => p.learningItemId);
           const newList = await listRepo.getRandomNew([selectedCollectionId], existingIds);
-          if (newList) {
+          if (newList && newList.id !== lastShownItemId.value) {
             nextItem = newList;
             nextItemType = 'list';
             break;
           }
 
           const dueList = await listRepo.getRandomDue([selectedCollectionId], now);
-          if (dueList) {
+          if (dueList && dueList.id !== lastShownItemId.value) {
             nextItem = dueList;
             nextItemType = 'list';
             break;
           }
         } else {
           const dueList = await listRepo.getRandomDue([selectedCollectionId], now);
-          if (dueList) {
+          if (dueList && dueList.id !== lastShownItemId.value) {
             nextItem = dueList;
             nextItemType = 'list';
             break;
@@ -448,7 +432,7 @@ async function loadNextItem() {
           );
           const existingIds = allProgress.map(p => p.learningItemId);
           const newList = await listRepo.getRandomNew([selectedCollectionId], existingIds);
-          if (newList) {
+          if (newList && newList.id !== lastShownItemId.value) {
             nextItem = newList;
             nextItemType = 'list';
             break;
@@ -463,21 +447,21 @@ async function loadNextItem() {
         );
         const existingIds = allProgress.map(p => p.learningItemId);
         const newList = await listRepo.getRandomNew(activeCollectionIds, existingIds);
-        if (newList) {
+        if (newList && newList.id !== lastShownItemId.value) {
           nextItem = newList;
           nextItemType = 'list';
           break;
         }
 
         const dueList = await listRepo.getRandomDue(activeCollectionIds, now);
-        if (dueList) {
+        if (dueList && dueList.id !== lastShownItemId.value) {
           nextItem = dueList;
           nextItemType = 'list';
           break;
         }
       } else {
         const dueList = await listRepo.getRandomDue(activeCollectionIds, now);
-        if (dueList) {
+        if (dueList && dueList.id !== lastShownItemId.value) {
           nextItem = dueList;
           nextItemType = 'list';
           break;
@@ -488,7 +472,7 @@ async function loadNextItem() {
         );
         const existingIds = allProgress.map(p => p.learningItemId);
         const newList = await listRepo.getRandomNew(activeCollectionIds, existingIds);
-        if (newList) {
+        if (newList && newList.id !== lastShownItemId.value) {
           nextItem = newList;
           nextItemType = 'list';
           break;
@@ -505,21 +489,21 @@ async function loadNextItem() {
           );
           const existingIds = allProgress.map(p => p.learningItemId);
           const newCloze = await clozeRepo.getRandomNew([selectedCollectionId], existingIds);
-          if (newCloze) {
+          if (newCloze && newCloze.id !== lastShownItemId.value) {
             nextItem = newCloze;
             nextItemType = 'cloze';
             break;
           }
 
           const dueCloze = await clozeRepo.getRandomDue([selectedCollectionId], now);
-          if (dueCloze) {
+          if (dueCloze && dueCloze.id !== lastShownItemId.value) {
             nextItem = dueCloze;
             nextItemType = 'cloze';
             break;
           }
         } else {
           const dueCloze = await clozeRepo.getRandomDue([selectedCollectionId], now);
-          if (dueCloze) {
+          if (dueCloze && dueCloze.id !== lastShownItemId.value) {
             nextItem = dueCloze;
             nextItemType = 'cloze';
             break;
@@ -530,7 +514,7 @@ async function loadNextItem() {
           );
           const existingIds = allProgress.map(p => p.learningItemId);
           const newCloze = await clozeRepo.getRandomNew([selectedCollectionId], existingIds);
-          if (newCloze) {
+          if (newCloze && newCloze.id !== lastShownItemId.value) {
             nextItem = newCloze;
             nextItemType = 'cloze';
             break;
@@ -545,21 +529,21 @@ async function loadNextItem() {
         );
         const existingIds = allProgress.map(p => p.learningItemId);
         const newCloze = await clozeRepo.getRandomNew(activeCollectionIds, existingIds);
-        if (newCloze) {
+        if (newCloze && newCloze.id !== lastShownItemId.value) {
           nextItem = newCloze;
           nextItemType = 'cloze';
           break;
         }
 
         const dueCloze = await clozeRepo.getRandomDue(activeCollectionIds, now);
-        if (dueCloze) {
+        if (dueCloze && dueCloze.id !== lastShownItemId.value) {
           nextItem = dueCloze;
           nextItemType = 'cloze';
           break;
         }
       } else {
         const dueCloze = await clozeRepo.getRandomDue(activeCollectionIds, now);
-        if (dueCloze) {
+        if (dueCloze && dueCloze.id !== lastShownItemId.value) {
           nextItem = dueCloze;
           nextItemType = 'cloze';
           break;
@@ -570,7 +554,7 @@ async function loadNextItem() {
         );
         const existingIds = allProgress.map(p => p.learningItemId);
         const newCloze = await clozeRepo.getRandomNew(activeCollectionIds, existingIds);
-        if (newCloze) {
+        if (newCloze && newCloze.id !== lastShownItemId.value) {
           nextItem = newCloze;
           nextItemType = 'cloze';
           break;
@@ -579,33 +563,10 @@ async function loadNextItem() {
     }
   }
 
-  // Check if newly loaded item should be added to queue
-  if (nextItem?.id && nextItemType && nextItemType !== 'concept') {
-    const progress = await learningProgressRepo.getByLearningItemId(nextItem.id);
-
-    // If has introductionTimestamp but no scheduling data, add to queue
-    if (progress?.introductionTimestamp && !progress.cardData && !progress.listData) {
-      recentlyIntroducedItems.value.push({
-        itemId: nextItem.id,
-        itemType: nextItemType,
-        introducedAt: progress.introductionTimestamp,
-        exercisesSince: 0
-      });
-      localStorage.setItem('recentlyIntroducedItems', JSON.stringify(recentlyIntroducedItems.value));
-    }
-
-    // Clean up queue - remove items that now have full progress
-    const cleanedQueue = [];
-    for (const item of recentlyIntroducedItems.value) {
-      const itemProgress = await learningProgressRepo.getByLearningItemId(item.itemId);
-      if (itemProgress && !itemProgress.cardData && !itemProgress.listData) {
-        cleanedQueue.push(item);
-      }
-    }
-    if (cleanedQueue.length !== recentlyIntroducedItems.value.length) {
-      recentlyIntroducedItems.value = cleanedQueue;
-      localStorage.setItem('recentlyIntroducedItems', JSON.stringify(recentlyIntroducedItems.value));
-    }
+  // Remove selected item from hot list and update lastShownItemId
+  if (nextItem?.id) {
+    hotList.value.delete(nextItem.id);
+    lastShownItemId.value = nextItem.id;
   }
 
   // Update state with the next item and finish loading
@@ -614,6 +575,10 @@ async function loadNextItem() {
   currentItem.value = nextItem;
   currentItemType.value = nextItemType;
   isLoading.value = false;
+}
+
+function handleAddToHotList(itemId: string) {
+  hotList.value.add(itemId);
 }
 
 function openFilterModal() {

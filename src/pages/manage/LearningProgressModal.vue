@@ -265,22 +265,6 @@
           </div>
         </div>
 
-        <!-- Helper Note (if present) -->
-        <div
-          v-if="progress.helperNote"
-          class="mt-4"
-        >
-          <div class="divider" />
-          <div>
-            <h4 class="font-semibold mb-2 text-sm">
-              Helper Note
-            </h4>
-            <div class="bg-base-200 p-3 rounded-lg text-sm">
-              {{ progress.helperNote }}
-            </div>
-          </div>
-        </div>
-
         <!-- Introduction Timestamp -->
         <div
           v-if="progress.introductionTimestamp"

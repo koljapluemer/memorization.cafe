@@ -55,31 +55,6 @@
           </div>
           <MarkdownText :text="list.note" />
         </div>
-
-        <div
-          v-if="existingHelperNote && !editingNote"
-          class="mt-4 flex items-center gap-2"
-        >
-          <span>{{ existingHelperNote }}</span>
-          <button
-            class="btn btn-ghost btn-sm"
-            @click="editingNote = true"
-          >
-            <Edit :size="16" />
-          </button>
-        </div>
-
-        <fieldset
-          v-if="(isNewItem && !existingHelperNote) || editingNote"
-          class="fieldset mt-4"
-        >
-          <label class="label">Add a note on how you will remember this</label>
-          <textarea
-            v-model="helperNote"
-            class="textarea textarea-bordered w-full h-24"
-            @blur="saveHelperNote"
-          />
-        </fieldset>
       </template>
     </template>
 
@@ -144,15 +119,22 @@
 
       <div
         v-if="revealed"
-        class="flex justify-center"
+        class="flex gap-2 justify-center"
       >
-        <button
-          v-if="isNewItem"
-          class="btn btn-primary"
-          @click="handleRememberCommitment"
-        >
-          I will try to remember
-        </button>
+        <template v-if="isNewItem">
+          <button
+            class="btn btn-primary"
+            @click="handleIWillRemember"
+          >
+            I will remember
+          </button>
+          <button
+            class="btn"
+            @click="handleAlreadyKnowThis"
+          >
+            Already Know This
+          </button>
+        </template>
         <button
           v-else
           class="btn btn-primary"
@@ -168,7 +150,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import * as ebisu from 'ebisu-js';
-import { Edit } from 'lucide-vue-next';
 
 import type { List } from './List';
 
@@ -191,16 +172,14 @@ const emit = defineEmits<{
   edit: [];
   delete: [];
   filter: [];
+  addToHotList: [itemId: string];
 }>();
 
 const revealed = ref(false);
 const userInputItems = ref<string[]>(['']);
 const userAnswers = ref<string[]>([]);
 const rememberedItems = ref<boolean[]>([]);
-const helperNote = ref('');
-const existingHelperNote = ref('');
 const isNewItem = ref(false);
-const editingNote = ref(false);
 const itemRecallProbabilities = ref<number[]>([]);
 const highRecallItems = ref<Set<number>>(new Set());
 
@@ -208,11 +187,6 @@ onMounted(async () => {
   // Check if this is a new list
   const progress = await learningProgressRepo.getByLearningItemId(props.list.id!);
   isNewItem.value = !progress;
-
-  // Load existing helper note if available
-  if (progress?.helperNote) {
-    existingHelperNote.value = progress.helperNote;
-  }
 
   // Calculate recall probabilities for each item
   const now = new Date();
@@ -262,15 +236,7 @@ function handleReveal() {
   revealed.value = true;
 }
 
-async function saveHelperNote() {
-  if (helperNote.value.trim()) {
-    await learningProgressRepo.updateHelperNote(props.list.id!, helperNote.value.trim());
-    existingHelperNote.value = helperNote.value.trim();
-    editingNote.value = false;
-  }
-}
-
-async function handleRememberCommitment() {
+async function handleIWillRemember() {
   const now = new Date();
 
   // Initialize element models for all items in the list
@@ -293,9 +259,32 @@ async function handleRememberCommitment() {
     { listModel, elementModels }
   );
 
-  if (helperNote.value.trim()) {
-    await learningProgressRepo.updateHelperNote(props.list.id!, helperNote.value.trim());
-  }
+  emit('addToHotList', props.list.id!);
+  emit('complete');
+}
+
+async function handleAlreadyKnowThis() {
+  const now = new Date();
+
+  // Initialize element models for all items in the list
+  const elementModels: ElementModelsMap = {};
+  props.list.items.forEach((item) => {
+    const key = normalizeItemKey(item);
+    elementModels[key] = {
+      model: ebisu.defaultModel(24),
+      lastReviewTimestamp: now,
+      addedAt: now
+    };
+  });
+
+  // Initialize list-level model
+  const listModel = ebisu.defaultModel(24);
+
+  await learningProgressRepo.createIntroductionProgress(
+    props.list.id!,
+    'list',
+    { listModel, elementModels }
+  );
 
   emit('complete');
 }
@@ -366,11 +355,6 @@ async function handleComplete() {
       updatedListModel,
       elementModels
     );
-  }
-
-  // Save helper note if provided
-  if (helperNote.value.trim()) {
-    await learningProgressRepo.updateHelperNote(props.list.id!, helperNote.value.trim());
   }
 
   emit('complete');

@@ -101,13 +101,6 @@ export const learningProgressRepo: LearningProgressContract = {
     }
   },
 
-  async updateHelperNote(learningItemId: string, helperNote: string): Promise<void> {
-    const existing = await this.getByLearningItemId(learningItemId);
-    if (existing?.id) {
-      await db.learningProgress.update(existing.id, { helperNote });
-    }
-  },
-
   async createEbisuProgressWithElements(
     learningItemId: string,
     itemType: 'list',
