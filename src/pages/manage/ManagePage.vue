@@ -40,6 +40,7 @@
         @show-progress="openProgressModal"
         @download-example-csv="handleDownloadExampleCsv"
         @import-csv="handleImportCsvClick"
+        @export-json-zip="handleExportJsonZip"
       />
 
       <!-- Hidden file input for CSV import -->
@@ -753,6 +754,33 @@ async function handleCsvFileSelected(event: Event) {
   pendingImportType.value = null;
 }
 
+function handleExportJsonZip() {
+  if (!activeCollection.value?.id) {
+    showToast('No active collection to export', 'warning');
+    return;
+  }
+
+  try {
+    const collection = activeCollection.value;
+    const collectionId = collection.id;
+
+    const files = [
+      { name: 'collection.json', data: encodeJson(collection) },
+      { name: 'flashcards.json', data: encodeJson(flashcards.value.filter(f => f.collectionId === collectionId)) },
+      { name: 'concepts.json', data: encodeJson(concepts.value.filter(c => c.collectionId === collectionId)) },
+      { name: 'lists.json', data: encodeJson(lists.value.filter(l => l.collectionId === collectionId)) },
+      { name: 'clozes.json', data: encodeJson(clozes.value.filter(c => c.collectionId === collectionId)) },
+    ];
+
+    const zipBlob = createZipBlob(files);
+    const filename = `${sanitizeFilename(collection.name || 'collection')}.zip`;
+    downloadBlob(zipBlob, filename);
+    showToast(`Exported ${collection.name} to ${filename}`, 'success');
+  } catch (error) {
+    showToast(`Failed to export collection: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+  }
+}
+
 function getEntityDisplayName(type: EntityType): string {
   switch (type) {
     case 'flashcard':
@@ -764,5 +792,138 @@ function getEntityDisplayName(type: EntityType): string {
     case 'cloze':
       return 'Cloze';
   }
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+function sanitizeFilename(input: string): string {
+  const normalized = input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return normalized.length > 0 ? normalized : 'collection';
+}
+
+function encodeJson(data: unknown): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify(data, null, 2));
+}
+
+function createZipBlob(files: { name: string; data: Uint8Array }[]): Blob {
+  const chunks: Uint8Array[] = [];
+  const centralChunks: Uint8Array[] = [];
+  let offset = 0;
+  const timestamp = getDosDateTime(new Date());
+
+  for (const file of files) {
+    const nameBytes = new TextEncoder().encode(file.name);
+    const crc = crc32(file.data);
+
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const localView = new DataView(localHeader.buffer);
+    localView.setUint32(0, 0x04034b50, true);
+    localView.setUint16(4, 20, true);
+    localView.setUint16(6, 0, true);
+    localView.setUint16(8, 0, true);
+    localView.setUint16(10, timestamp.time, true);
+    localView.setUint16(12, timestamp.date, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, file.data.length, true);
+    localView.setUint32(22, file.data.length, true);
+    localView.setUint16(26, nameBytes.length, true);
+    localView.setUint16(28, 0, true);
+    localHeader.set(nameBytes, 30);
+
+    chunks.push(localHeader, file.data);
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    const centralView = new DataView(centralHeader.buffer);
+    centralView.setUint32(0, 0x02014b50, true);
+    centralView.setUint16(4, 20, true);
+    centralView.setUint16(6, 20, true);
+    centralView.setUint16(8, 0, true);
+    centralView.setUint16(10, 0, true);
+    centralView.setUint16(12, timestamp.time, true);
+    centralView.setUint16(14, timestamp.date, true);
+    centralView.setUint32(16, crc, true);
+    centralView.setUint32(20, file.data.length, true);
+    centralView.setUint32(24, file.data.length, true);
+    centralView.setUint16(28, nameBytes.length, true);
+    centralView.setUint16(30, 0, true);
+    centralView.setUint16(32, 0, true);
+    centralView.setUint16(34, 0, true);
+    centralView.setUint16(36, 0, true);
+    centralView.setUint32(38, 0, true);
+    centralView.setUint32(42, offset, true);
+    centralHeader.set(nameBytes, 46);
+
+    centralChunks.push(centralHeader);
+    offset += localHeader.length + file.data.length;
+  }
+
+  const centralDirectoryOffset = offset;
+  let centralDirectorySize = 0;
+  for (const chunk of centralChunks) {
+    centralDirectorySize += chunk.length;
+  }
+
+  const endRecord = new Uint8Array(22);
+  const endView = new DataView(endRecord.buffer);
+  endView.setUint32(0, 0x06054b50, true);
+  endView.setUint16(4, 0, true);
+  endView.setUint16(6, 0, true);
+  endView.setUint16(8, files.length, true);
+  endView.setUint16(10, files.length, true);
+  endView.setUint32(12, centralDirectorySize, true);
+  endView.setUint32(16, centralDirectoryOffset, true);
+  endView.setUint16(20, 0, true);
+
+  const blobParts = [...chunks, ...centralChunks, endRecord].map(part =>
+    part.buffer.slice(part.byteOffset, part.byteOffset + part.byteLength) as ArrayBuffer
+  );
+  return new Blob(blobParts, { type: 'application/zip' });
+}
+
+let crcTable: Uint32Array | null = null;
+
+function crc32(data: Uint8Array): number {
+  if (!crcTable) {
+    crcTable = new Uint32Array(256);
+    for (let i = 0; i < 256; i += 1) {
+      let c = i;
+      for (let k = 0; k < 8; k += 1) {
+        c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      crcTable[i] = c >>> 0;
+    }
+  }
+
+  let crc = 0xffffffff;
+  for (let i = 0; i < data.length; i += 1) {
+    crc = (crc >>> 8) ^ crcTable[(crc ^ data[i]!) & 0xff]!;
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function getDosDateTime(date: Date): { time: number; date: number } {
+  const year = Math.max(1980, date.getFullYear());
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = Math.floor(date.getSeconds() / 2);
+
+  const dosTime = (hours << 11) | (minutes << 5) | seconds;
+  const dosDate = ((year - 1980) << 9) | (month << 5) | day;
+  return { time: dosTime, date: dosDate };
 }
 </script>

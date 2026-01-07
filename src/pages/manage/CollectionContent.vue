@@ -37,6 +37,14 @@
             @download-example="handleDownloadExample"
             @import-csv="handleImportCsv"
           />
+          <div class="mt-3">
+            <button
+              class="btn btn-sm btn-outline"
+              @click="emit('export-json-zip')"
+            >
+              <Download :size="16" /> Export JSON (.zip)
+            </button>
+          </div>
         </div>
       </div>
     </details>
@@ -120,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { Edit, Share2, Trash2 } from 'lucide-vue-next';
+import { Download, Edit, Share2, Trash2 } from 'lucide-vue-next';
 
 import LearningItemsTable, { type LearningItem } from './LearningItemsTable.vue';
 import CsvImportExportTable from './CsvImportExportTable.vue';
@@ -151,6 +159,7 @@ const emit = defineEmits<{
   'show-progress': [type: 'flashcard' | 'concept' | 'list' | 'cloze', item: SimpleFlashcard | Concept | List | Cloze];
   'download-example-csv': [type: EntityType];
   'import-csv': [type: EntityType];
+  'export-json-zip': [];
   'update:search-query': [value: string];
   'update:sort-by': [value: string];
 }>();
