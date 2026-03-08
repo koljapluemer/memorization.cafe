@@ -1,5 +1,7 @@
 # memorization.cafe
 
+> [!WARNING] *archival notice:* [karten](https://github.com/koljapluemer/karten) is the spiritual successor
+
 A spaced repetition learning application built with Vue 3, TypeScript, and Vite.
 
 ## Features
