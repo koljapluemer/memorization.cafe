@@ -2,6 +2,8 @@
 
 > [!WARNING] *archival notice:* [karten](https://github.com/koljapluemer/karten) is the spiritual successor
 
+![](doc/screenshot.png)
+
 A spaced repetition learning application built with Vue 3, TypeScript, and Vite.
 
 ## Features
