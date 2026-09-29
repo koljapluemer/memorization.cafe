@@ -1,6 +1,7 @@
 # memorization.cafe
 
-> [!WARNING] *archival notice:* [karten](https://github.com/koljapluemer/karten) is the spiritual successor
+> [!WARNING]
+> *archival notice:* [karten](https://github.com/koljapluemer/karten) is the spiritual successor
 
 ![](doc/screenshot.png)
 
